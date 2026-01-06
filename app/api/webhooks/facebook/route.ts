@@ -5,14 +5,18 @@ import pool from '@/lib/db';
 export const dynamic = 'force-dynamic'; // Ensure dynamic for incoming webhooks
 
 // Helper to get settings from DB
+// Helper to get settings from DB
 async function getSetting(key: string) {
     const connection = await pool.getConnection();
     try {
         const [rows]: any = await connection.execute(
-            'SELECT setting_value FROM settings WHERE setting_key = ?',
+            'SELECT `value` FROM system_settings WHERE `key` = ?',
             [key]
         );
-        return rows.length > 0 ? rows[0].setting_value : null;
+        return rows.length > 0 ? rows[0].value : null;
+    } catch (e) {
+        console.error(`Error fetching setting ${key}:`, e);
+        return null;
     } finally {
         connection.release();
     }
@@ -36,6 +40,7 @@ export async function GET(request: Request) {
 // 2. Lead Capture (POST)
 export async function POST(request: Request) {
     try {
+        console.log('--- FB WEBHOOK POST HIT ---');
         const bodyText = await request.text();
         const signature = request.headers.get('x-hub-signature-256');
         const appSecret = await getSetting('facebook_app_secret');
