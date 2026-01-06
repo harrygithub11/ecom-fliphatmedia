@@ -22,9 +22,16 @@ export function StickyCTA({ price, originalPrice = 12000, source, ctaConfig, pay
 
     useEffect(() => {
         setMounted(true);
+        let ticking = false;
         const handleScroll = () => {
-            if (window.scrollY > 300) setShow(true);
-            else setShow(false);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    if (window.scrollY > 300) setShow(true);
+                    else setShow(false);
+                    ticking = false;
+                });
+                ticking = true;
+            }
         };
 
         const handleModalState = (e: any) => {
