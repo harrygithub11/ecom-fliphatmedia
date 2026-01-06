@@ -1,55 +1,43 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-async function createSettingsTable() {
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME
-    });
+async function migrateSettings() {
+    console.log('Connecting to database...');
+    const connection = await mysql.createConnection(process.env.DATABASE_URL);
 
     try {
-        console.log('Creating settings table...');
+        console.log('Checking for system_settings table...');
 
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS settings (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                setting_key VARCHAR(100) UNIQUE NOT NULL,
-                setting_value TEXT,
-                description VARCHAR(255),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
+        // Check if table exists
+        const [tables] = await connection.execute(`
+            SELECT TABLE_NAME 
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'system_settings'
         `);
 
-        console.log('✓ Settings table created successfully');
-
-        // Insert default values
-        const defaultSettings = [
-            { key: 'site_name', value: 'FliphatMedia', description: 'Site name' },
-            { key: 'offer_end_date', value: '2026-12-31T23:59', description: 'Lifetime Offer (12k) end date' },
-            { key: 'newyear_offer_date', value: '2026-01-31T23:59', description: 'New Year Offer (5k) end date' }
-        ];
-
-        for (const setting of defaultSettings) {
-            await connection.execute(
-                'INSERT IGNORE INTO settings (setting_key, setting_value, description) VALUES (?, ?, ?)',
-                [setting.key, setting.value, setting.description]
-            );
+        if (tables.length === 0) {
+            console.log('Creating system_settings table...');
+            await connection.execute(`
+                CREATE TABLE system_settings (
+                    id VARCHAR(191) NOT NULL PRIMARY KEY,
+                    \`key\` VARCHAR(191) NOT NULL,
+                    \`value\` TEXT NOT NULL,
+                    description VARCHAR(191) NULL,
+                    updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+                    UNIQUE INDEX system_settings_key_key(\`key\`)
+                ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+            `);
+            console.log('✅ Created system_settings table successfully.');
+        } else {
+            console.log('ℹ️ system_settings table already exists.');
         }
 
-        console.log('✓ Default settings inserted');
-
-        const [rows] = await connection.execute('SELECT * FROM settings');
-        console.log('\nCurrent settings:');
-        console.table(rows);
-
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Migration failed:', error);
     } finally {
         await connection.end();
     }
 }
 
-createSettingsTable();
+migrateSettings();
