@@ -34,12 +34,33 @@ async function subscribeApp() {
         console.log(`Token belongs to: "${verifyData.name}" (ID: ${verifyData.id})`);
 
         if (verifyData.id !== pageId) {
-            console.error('\n❌ CRITICAL ERROR: TOKEN MISMATCH');
-            console.error(`You provided a token for: ${verifyData.name} (ID: ${verifyData.id})`);
-            console.error(`But we need a token for Page ID: ${pageId}`);
-            console.error('--> This is likely a USER Token. You must generate a PAGE Token.');
-            console.error('--> In Graph API Explorer, select your PAGE from the "User or Page" dropdown.');
-            return;
+            console.log('Detected User Token. Attempting to fetch Page Token automatically...');
+
+            // 1. Fetch Accounts (Pages) using User Token
+            const accountsRes = await fetch(`https://graph.facebook.com/me/accounts?access_token=${pageAccessToken}&limit=100`);
+            const accountsData = await accountsRes.json();
+
+            if (accountsData.error) {
+                throw new Error('Failed to fetch pages: ' + accountsData.error.message);
+            }
+
+            // 2. Find the matching Page
+            const matchingPage = accountsData.data.find(page => page.id === pageId);
+
+            if (!matchingPage) {
+                console.error('\n❌ CRITICAL ERROR: Page Not Found');
+                console.error(`User "${verifyData.name}" does not seem to have admin access to Page ID: ${pageId}`);
+                console.error('Available Pages:', accountsData.data.map(p => `${p.name} (${p.id})`).join(', '));
+                return;
+            }
+
+            console.log(`✅ Found Page: "${matchingPage.name}"`);
+
+            // 3. Swap the token
+            pageAccessToken = matchingPage.access_token;
+            console.log('✅ Automatically swapped User Token for Page Access Token.');
+        } else {
+            console.log('Token is already a Page Token.');
         }
 
         // 2. Call Graph API to subscribe
