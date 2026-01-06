@@ -109,3 +109,9 @@
         background: hsl(var(--muted-foreground) / 0.4);
     }
 }
+
+@media (max-width: 768px) {
+    html {
+        zoom: 0.85;
+    }
+}
