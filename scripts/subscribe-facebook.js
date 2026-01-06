@@ -21,6 +21,7 @@ async function subscribeApp() {
         const pageId = pageIdRow[0][0]?.value;
 
         console.log(`Found Access Token for Page ID: ${pageId}`);
+        console.log(`Using Token ending in: "...${pageAccessToken.slice(-10)}"`); // DEBUG LINE
 
         // 1.5 Verify Token
         console.log('Verifying Token Owner...');
