@@ -30,8 +30,18 @@ export function StickyCTA({ price, originalPrice = 12000, source, ctaConfig, pay
             }
         };
 
+        const handleModalState = (e: any) => {
+            if (e.detail.open) setShow(false);
+            // Don't auto-show on close, let scroll handle it or keep it hidden until scroll
+            else if (window.scrollY > 300) setShow(true);
+        };
+
         window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        window.addEventListener('bookingModalState', handleModalState);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('bookingModalState', handleModalState);
+        };
     }, []);
 
     const dateStr = offerEndDate ? new Date(offerEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Limited Time Offer';

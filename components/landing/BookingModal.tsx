@@ -172,112 +172,121 @@ export function BookingModal({
         );
     }
 
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                {children || (
-                    <HoverButton
-                        className={type === 'pay'
-                            ? "w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg h-14 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
-                            : "w-full bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-lg h-14 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 backdrop-blur-none border-transparent"}
-                    >
-                        {triggerText || (type === 'pay' ? 'Get Instant Access' : 'Book a Free Strategy Call')}
-                    </HoverButton>
-                )}
-            </DialogTrigger>
-            <DialogContent className="w-[90vw] sm:w-full sm:max-w-[425px] bg-zinc-950 border-zinc-800 text-white shadow-2xl overflow-hidden selection:bg-red-500/30 rounded-2xl md:rounded-xl">
-                {/* Background Decor */}
-                <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-red-600/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-[150px] h-[150px] bg-red-900/10 rounded-full blur-[60px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+    const handleOpenChange = (newOpen: boolean) => {
+        setOpen(newOpen);
+        // Dispatch custom event so StickyCTA can listen
+        const event = new CustomEvent('bookingModalState', { detail: { open: newOpen } });
+        window.dispatchEvent(event);
+    };
 
-                <DialogHeader className="space-y-2 items-center text-center">
-                    <DialogTitle className="text-xl md:text-2xl font-black tracking-tight flex items-center justify-center gap-2">
-                        {type === 'pay' ? 'Complete Purchase' : 'Book a Strategy Call'}
-                        <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
-                    </DialogTitle>
-                    <p className="text-sm text-zinc-400 font-medium max-w-[280px] mx-auto leading-relaxed">
-                        {type === 'pay' ? 'Secure your exclusive offer now.' : 'Zero commitment. 100% value.'}
-                    </p>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid gap-4 md:gap-5 py-4 relative z-10">
-                    <div className="grid gap-2">
-                        <Label htmlFor="name" className="text-zinc-400 font-bold text-[10px] md:text-xs uppercase tracking-wider">Name</Label>
-                        <Input
-                            id="name"
-                            placeholder="John Doe"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-red-600 focus-visible:border-red-600 h-11 text-base md:text-sm"
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="email" className="text-zinc-400 font-bold text-xs uppercase tracking-wider">Email</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="john@example.com"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-red-600 focus-visible:border-red-600 h-11"
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="phone" className="text-zinc-400 font-bold text-xs uppercase tracking-wider">WhatsApp Number</Label>
-                        <Input
-                            id="phone"
-                            type="tel"
-                            placeholder="+91 9876543210"
-                            required
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-red-600 focus-visible:border-red-600 h-11"
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="store" className="text-zinc-400 font-bold text-xs uppercase tracking-wider">Existing Store (Optional)</Label>
-                        <Input
-                            id="store"
-                            placeholder="www.examplestore.com"
-                            value={store}
-                            onChange={(e) => setStore(e.target.value)}
-                            className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-red-600 focus-visible:border-red-600 h-11"
-                        />
-                    </div>
-                    {type === 'pay' && (
-                        <div className="p-4 bg-red-900/10 rounded-xl text-sm border border-red-900/20">
-                            <div className="flex justify-between font-bold text-white mb-1 text-base">
-                                <span>Offer Price</span>
-                                <span>₹{amount.toLocaleString()}</span>
-                            </div>
-                            <p className="text-xs text-red-400">Secure payment via UPI/Card/NetBanking</p>
+
+
+    // Replace setOpen with handleOpenChange in renders
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+            {children || (
+                <HoverButton
+                    className={type === 'pay'
+                        ? "w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg h-14 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+                        : "w-full bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-lg h-14 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 backdrop-blur-none border-transparent"}
+                >
+                    {triggerText || (type === 'pay' ? 'Get Instant Access' : 'Book a Free Strategy Call')}
+                </HoverButton>
+            )}
+        </DialogTrigger>
+        <DialogContent className="w-[90vw] sm:w-full sm:max-w-[425px] bg-zinc-950 border-zinc-800 text-white shadow-2xl overflow-hidden selection:bg-red-500/30 rounded-2xl md:rounded-xl">
+            {/* Background Decor */}
+            <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-red-600/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[150px] h-[150px] bg-red-900/10 rounded-full blur-[60px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+
+            <DialogHeader className="space-y-2 items-center text-center">
+                <DialogTitle className="text-xl md:text-2xl font-black tracking-tight flex items-center justify-center gap-2">
+                    {type === 'pay' ? 'Complete Purchase' : 'Book a Strategy Call'}
+                    <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
+                </DialogTitle>
+                <p className="text-sm text-zinc-400 font-medium max-w-[280px] mx-auto leading-relaxed">
+                    {type === 'pay' ? 'Secure your exclusive offer now.' : 'Zero commitment. 100% value.'}
+                </p>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="grid gap-4 md:gap-5 py-4 relative z-10">
+                <div className="grid gap-2">
+                    <Label htmlFor="name" className="text-zinc-400 font-bold text-[10px] md:text-xs uppercase tracking-wider">Name</Label>
+                    <Input
+                        id="name"
+                        placeholder="John Doe"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-red-600 focus-visible:border-red-600 h-11 text-base md:text-sm"
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="email" className="text-zinc-400 font-bold text-xs uppercase tracking-wider">Email</Label>
+                    <Input
+                        id="email"
+                        type="email"
+                        placeholder="john@example.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-red-600 focus-visible:border-red-600 h-11"
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="phone" className="text-zinc-400 font-bold text-xs uppercase tracking-wider">WhatsApp Number</Label>
+                    <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+91 9876543210"
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-red-600 focus-visible:border-red-600 h-11"
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="store" className="text-zinc-400 font-bold text-xs uppercase tracking-wider">Existing Store (Optional)</Label>
+                    <Input
+                        id="store"
+                        placeholder="www.examplestore.com"
+                        value={store}
+                        onChange={(e) => setStore(e.target.value)}
+                        className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-red-600 focus-visible:border-red-600 h-11"
+                    />
+                </div>
+                {type === 'pay' && (
+                    <div className="p-4 bg-red-900/10 rounded-xl text-sm border border-red-900/20">
+                        <div className="flex justify-between font-bold text-white mb-1 text-base">
+                            <span>Offer Price</span>
+                            <span>₹{amount.toLocaleString()}</span>
                         </div>
-                    )}
-                    <div className="flex items-start gap-2 text-xs text-zinc-400">
-                        <input
-                            type="checkbox"
-                            id="privacy-consent"
-                            required
-                            className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-red-600 focus:ring-red-600 focus:ring-offset-0"
-                        />
-                        <label htmlFor="privacy-consent" className="leading-tight">
-                            I agree to the{' '}
-                            <a href="/privacy" target="_blank" className="text-red-500 hover:text-red-400 underline">
-                                Privacy Policy
-                            </a>
-                            {' '}and consent to the collection of my personal data.
-                        </label>
+                        <p className="text-xs text-red-400">Secure payment via UPI/Card/NetBanking</p>
                     </div>
-                    <Button
-                        type="submit"
-                        className="w-full mt-2 h-12 text-base font-bold bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg shadow-red-900/20 transition-all hover:scale-[1.02] rounded-xl"
-                        disabled={loading}
-                    >
-                        {loading ? 'Processing...' : (type === 'pay' ? 'Proceed to Payment' : 'Schedule Free Strategy Call')}
-                    </Button>
-                </form>
-            </DialogContent>
-        </Dialog>
+                )}
+                <div className="flex items-start gap-2 text-xs text-zinc-400">
+                    <input
+                        type="checkbox"
+                        id="privacy-consent"
+                        required
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-red-600 focus:ring-red-600 focus:ring-offset-0"
+                    />
+                    <label htmlFor="privacy-consent" className="leading-tight">
+                        I agree to the{' '}
+                        <a href="/privacy" target="_blank" className="text-red-500 hover:text-red-400 underline">
+                            Privacy Policy
+                        </a>
+                        {' '}and consent to the collection of my personal data.
+                    </label>
+                </div>
+                <Button
+                    type="submit"
+                    className="w-full mt-2 h-12 text-base font-bold bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg shadow-red-900/20 transition-all hover:scale-[1.02] rounded-xl"
+                    disabled={loading}
+                >
+                    {loading ? 'Processing...' : (type === 'pay' ? 'Proceed to Payment' : 'Schedule Free Strategy Call')}
+                </Button>
+            </form>
+        </DialogContent>
+    </Dialog>
     );
 }
