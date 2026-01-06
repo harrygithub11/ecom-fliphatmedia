@@ -16,7 +16,7 @@ async function subscribeApp() {
             throw new Error('No facebook_access_token found in system_settings table. Please save it in the Admin Dashboard first.');
         }
 
-        const pageAccessToken = rows[0].value;
+        let pageAccessToken = rows[0].value;
         const pageIdRow = await connection.execute(`SELECT \`value\` FROM system_settings WHERE \`key\` = 'facebook_page_id'`);
         const pageId = pageIdRow[0][0]?.value;
 
