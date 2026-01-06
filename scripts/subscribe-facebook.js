@@ -87,6 +87,34 @@ async function subscribeApp() {
                 }
 
                 console.error('\nAvailable Pages detected:', accountsData.data.map(p => `${p.name} (${p.id})`).join(', ') || 'NONE');
+
+                // 2.6 Deep Probe
+                console.log('\n🕵️  DEEP PROBE: Checking Page ID directly...');
+                const probeRes = await fetch(`https://graph.facebook.com/${pageId}?fields=name,access_token&access_token=${pageAccessToken}`);
+                const probeData = await probeRes.json();
+
+                if (probeData.error) {
+                    console.error('❌ Direct Page Access Failed:', probeData.error.message);
+                    console.error('Code:', probeData.error.code);
+                    console.error('Type:', probeData.error.type);
+                } else {
+                    console.log('✅ Direct access WORKED! (Why was it not in /me/accounts?)');
+                    console.log('Page Name:', probeData.name);
+                    if (probeData.access_token) {
+                        console.log('✅ WE GOT A PAGE TOKEN! SWAPPING NOW...');
+                        pageAccessToken = probeData.access_token;
+                        // GOTO Step 2
+                        console.log('Token matches Page ID! Subscribing App to Page (leadgen)...');
+                        const url = `https://graph.facebook.com/v18.0/${pageId}/subscribed_apps?subscribed_fields=leadgen&access_token=${pageAccessToken}`;
+                        const response = await fetch(url, { method: 'POST' });
+                        const data = await response.json();
+                        if (data.success) {
+                            console.log('✅ SUCCESS! The App is now explicitly subscribed to the Page.');
+                            return;
+                        }
+                    }
+                }
+
                 return;
             }
 
