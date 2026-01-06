@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getSession } from '@/lib/auth';
+import crypto from 'crypto';
 
 export async function GET() {
     try {
         const session = await getSession();
-        // Temporarily bypass auth for debugging
-        // if (!session || session.role !== 'admin') {
-        //     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        // }
 
         const connection = await pool.getConnection();
         try {
@@ -47,10 +44,6 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const session = await getSession();
-        // Temporarily bypass auth for debugging
-        // if (!session || session.role !== 'admin') {
-        //     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        // }
 
         const body = await request.json();
 
@@ -68,8 +61,8 @@ export async function POST(request: Request) {
 
                 if (existing.length === 0) {
                     await connection.execute(
-                        'INSERT INTO system_settings (`key`, `value`, description) VALUES (?, ?, ?)',
-                        [key, value, description || '']
+                        'INSERT INTO system_settings (id, `key`, `value`, description) VALUES (?, ?, ?, ?)',
+                        [crypto.randomUUID(), key, value, description || '']
                     );
                 } else {
                     await connection.execute(
@@ -101,8 +94,8 @@ export async function POST(request: Request) {
 
                     if (existing.length === 0) {
                         await connection.execute(
-                            'INSERT INTO system_settings (`key`, `value`) VALUES (?, ?)',
-                            [setting.key, setting.value]
+                            'INSERT INTO system_settings (id, `key`, `value`) VALUES (?, ?, ?)',
+                            [crypto.randomUUID(), setting.key, setting.value]
                         );
                     } else {
                         await connection.execute(
