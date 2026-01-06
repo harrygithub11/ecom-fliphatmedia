@@ -76,7 +76,6 @@ async function processLead(value: any) {
     const leadgenId = value.leadgen_id;
     const pageId = value.page_id;
     const formId = value.form_id;
-    const createdTime = value.created_time;
 
     console.log(`Processing Lead: ${leadgenId} from Page: ${pageId}`);
 
@@ -97,52 +96,49 @@ async function processLead(value: any) {
         }
 
         const leadData = await response.json();
-        /*
-          leadData example:
-          {
-            "id": "12345",
-            "created_time": "...",
-            "field_data": [
-               { "name": "email", "values": ["test@example.com"] },
-               { "name": "full_name", "values": ["John Doe"] },
-               { "name": "phone_number", "values": ["+123..."] }
-            ],
-            "ad_id": "...",
-            "ad_name": "...",
-            "adset_id": "...",
-            "campaign_id": "...",
-            "campaign_name": "...",
-            "form_id": "...",
-            "form_name": "...",
-            "is_organic": false,
-            "platform": "fb",
-          }
-        */
+        console.log('--- FB LEAD DATA RECEIVED ---');
+        console.log(JSON.stringify(leadData, null, 2));
 
-        // Map Fields
+        // Smart Field Mapping
         let email = null;
         let name = null;
         let phone = null;
         const otherFields: any = {};
 
-        for (const field of leadData.field_data || []) {
-            const val = field.values[0];
-            if (field.name === 'email') email = val;
-            else if (field.name === 'full_name' || field.name === 'name') name = val;
-            else if (field.name === 'phone_number' || field.name === 'phone') phone = val;
-            else otherFields[field.name] = val;
+        // Helper to normalize strings
+        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+
+        if (leadData.field_data) {
+            for (const field of leadData.field_data) {
+                const key = normalize(field.name);
+                const val = field.values[0];
+
+                if (!val) continue;
+
+                // Email Detection
+                if (key.includes('email')) {
+                    email = val;
+                }
+                // Name Detection
+                else if (key.includes('name') || key.includes('fullname')) {
+                    name = val;
+                }
+                // Phone Detection
+                else if (key.includes('phone') || key.includes('mobile') || key.includes('contact')) {
+                    phone = val;
+                }
+                else {
+                    otherFields[field.name] = val;
+                }
+            }
         }
 
-        // Ad Data
+        // Ad Data (Save Everything)
         const adData = {
-            ad_id: leadData.ad_id,
-            ad_name: leadData.ad_name,
-            campaign_id: leadData.campaign_id,
-            campaign_name: leadData.campaign_name,
-            form_id: leadData.form_id,
-            form_name: leadData.form_name,
-            platform: leadData.platform,
-            other_fields: otherFields
+            ...leadData, // Save raw data
+            mapped_fields: { email, name, phone },
+            other_fields: otherFields,
+            form_source: leadData.form_name || `Form ${formId}`
         };
 
         // Upsert Customer
@@ -156,7 +152,7 @@ async function processLead(value: any) {
 
             if ((existingFb as any).length > 0) {
                 console.log('Lead already exists (by FB ID)');
-                return; // Already processed
+                return;
             }
 
             // Check by email if available
@@ -172,34 +168,37 @@ async function processLead(value: any) {
             }
 
             if (customerId) {
-                // Update existing customer with FB info
+                // Update existing customer
                 await connection.execute(
                     `UPDATE customers 
                      SET facebook_lead_id = ?, 
-                         ad_data = ?, 
-                         source = IF(source = 'Website', 'Facebook Lead Form', source)
+                         ad_data = ?,
+                         source = IF(source IS NULL OR source = '', 'Facebook Lead Form', source)
                      WHERE id = ?`,
                     [leadgenId, JSON.stringify(adData), customerId]
                 );
                 console.log(`Updated Customer #${customerId} with FB Lead info`);
 
-                // Log activity
                 await connection.execute(
                     `INSERT INTO admin_activity_logs (action_type, action_description, entity_type, entity_id)
                      VALUES (?, ?, ?, ?)`,
-                    ['lead_merged', `Merged FB Lead ${leadData.form_name}`, 'customer', customerId]
+                    ['lead_merged', `Merged FB Lead: ${name || email || leadgenId}`, 'customer', customerId]
                 );
 
             } else {
                 // Create new customer
+                // Fallback for Name/Email if missing
+                const safeName = name || `FB Lead ${leadgenId.substr(-4)}`;
+                const safeEmail = email || `fb-lead-${leadgenId}@placeholder.com`; // Ensure uniqueness if email missing
+
                 const [result] = await connection.execute(
                     `INSERT INTO customers (name, email, phone, source, stage, score, facebook_lead_id, ad_data)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
-                        name || 'Facebook Lead',
-                        email,
+                        safeName,
+                        safeEmail,
                         phone,
-                        'Facebook Lead Form',
+                        `FB: ${adData.form_source}`, // nicer source name
                         'new',
                         'cold',
                         leadgenId,
@@ -209,11 +208,10 @@ async function processLead(value: any) {
                 const newId = (result as any).insertId;
                 console.log(`Created new Customer #${newId} from FB Lead`);
 
-                // Log activity
                 await connection.execute(
                     `INSERT INTO admin_activity_logs (action_type, action_description, entity_type, entity_id)
                      VALUES (?, ?, ?, ?)`,
-                    ['lead_created', `New FB Lead from ${leadData.form_name}`, 'customer', newId]
+                    ['lead_created', `New FB Lead: ${safeName}`, 'customer', newId]
                 );
             }
 
