@@ -9,9 +9,19 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const limit = parseInt(searchParams.get('limit') || '100');
+        const adminId = searchParams.get('admin_id');
 
         const connection = await pool.getConnection();
         try {
+            // Build WHERE clause for admin filter
+            let whereClause = '';
+            const params: any[] = [];
+
+            if (adminId && adminId !== 'all') {
+                whereClause = 'WHERE i.created_by = ?';
+                params.push(adminId);
+            }
+
             // Fetch from interactions table - the main timeline source
             const [interactions]: any = await connection.execute(
                 `SELECT 
@@ -27,8 +37,10 @@ export async function GET(request: Request) {
                  FROM interactions i
                  LEFT JOIN customers c ON i.customer_id = c.id
                  LEFT JOIN admins a ON i.created_by = a.id
+                 ${whereClause}
                  ORDER BY i.created_at DESC
-                 LIMIT 100`
+                 LIMIT ?`,
+                [...params, limit]
             );
 
             // Try to also fetch admin_activity_logs (disable for now to debug)

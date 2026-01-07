@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import {
     CheckCircle2, Clock, Phone, MessageSquare, FileText, User, RefreshCw, Plus,
     MoreHorizontal, Pencil, Trash2, Calendar, AlertCircle, Activity, UserCheck,
-    ArrowUpRight, Settings
+    ArrowUpRight, Settings, Circle, ChevronDown
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -60,6 +60,7 @@ export default function WorkspacePage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState('all');
     const [userFilter, setUserFilter] = useState('all');
+    const [activityUserFilter, setActivityUserFilter] = useState('all');
 
     // Add Task Dialog
     const [addTaskOpen, setAddTaskOpen] = useState(false);
@@ -81,7 +82,10 @@ export default function WorkspacePage() {
     };
 
     const fetchTimeline = async () => {
-        const res = await fetch('/api/admin/interactions?limit=100');
+        let url = '/api/admin/interactions?limit=100';
+        if (activityUserFilter !== 'all') url += `&admin_id=${activityUserFilter}`;
+
+        const res = await fetch(url);
         const data = await res.json();
         if (data.success) setTimeline(data.interactions);
     };
@@ -96,7 +100,7 @@ export default function WorkspacePage() {
 
     useEffect(() => {
         Promise.all([fetchTasks(), fetchTimeline(), fetchTeam()]).finally(() => setLoading(false));
-    }, [statusFilter, priorityFilter, userFilter]);
+    }, [statusFilter, priorityFilter, userFilter, activityUserFilter]);
 
     const toggleTaskStatus = async (taskId: number, currentStatus: string) => {
         const newStatus = currentStatus === 'done' ? 'open' : 'done';
@@ -328,16 +332,22 @@ export default function WorkspacePage() {
                                     {tasks.map(task => (
                                         <div key={task.id} className="flex items-start gap-4 p-4 border rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group">
                                             <Select value={task.status} onValueChange={v => handleUpdateTask(task.id, 'status', v)}>
-                                                <SelectTrigger className="w-auto h-auto p-0 border-none shadow-none mt-1">
-                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors cursor-pointer ${task.status === 'done'
-                                                        ? 'bg-green-500 border-green-500 text-white'
-                                                        : task.status === 'in_progress'
-                                                            ? 'bg-blue-100 border-blue-300 text-blue-600'
-                                                            : 'border-zinc-300 hover:border-primary hover:bg-primary/10'
-                                                        }`}>
+                                                <SelectTrigger className="w-auto h-auto border-none shadow-none p-0">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`cursor-pointer text-xs font-medium px-2 py-1 flex items-center gap-1 ${task.status === 'done'
+                                                            ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                                                            : task.status === 'in_progress'
+                                                                ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
+                                                                : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+                                                            }`}
+                                                    >
                                                         {task.status === 'done' && <CheckCircle2 className="w-3 h-3" />}
-                                                        {task.status === 'in_progress' && <div className="w-2 h-2 bg-current rounded-full" />}
-                                                    </div>
+                                                        {task.status === 'in_progress' && <Clock className="w-3 h-3" />}
+                                                        {task.status === 'open' && <Circle className="w-3 h-3" />}
+                                                        <span className="capitalize">{task.status === 'in_progress' ? 'In Progress' : task.status}</span>
+                                                        <ChevronDown className="w-3 h-3 opacity-50" />
+                                                    </Badge>
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="open">Open</SelectItem>
@@ -436,8 +446,25 @@ export default function WorkspacePage() {
                 <TabsContent value="timeline" className="mt-6">
                     <Card>
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-lg">Global Activity Feed</CardTitle>
-                            <CardDescription>Everything happening across your CRM</CardDescription>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Global Activity Feed</CardTitle>
+                                    <CardDescription>Everything happening across your CRM</CardDescription>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Select value={activityUserFilter} onValueChange={setActivityUserFilter}>
+                                        <SelectTrigger className="w-[120px] h-8">
+                                            <SelectValue placeholder="User" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Users</SelectItem>
+                                            {team.map(member => (
+                                                <SelectItem key={member.id} value={String(member.id)}>{member.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {timeline.length === 0 ? (
