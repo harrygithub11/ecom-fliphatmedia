@@ -229,10 +229,10 @@ export default function WorkspacePage() {
                                     <Label>Priority</Label>
                                     <Select value={newTask.priority} onValueChange={v => setNewTask({ ...newTask, priority: v })}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="high">🔴 High</SelectItem>
-                                            <SelectItem value="medium">🟡 Medium</SelectItem>
-                                            <SelectItem value="low">🟢 Low</SelectItem>
+                                        <SelectContent className="z-[9999]">
+                                            <SelectItem value="high"><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>High</SelectItem>
+                                            <SelectItem value="medium"><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>Medium</SelectItem>
+                                            <SelectItem value="low"><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>Low</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -248,8 +248,8 @@ export default function WorkspacePage() {
 
             <Tabs defaultValue="tasks" className="w-full">
                 <TabsList className="grid w-full max-w-md grid-cols-2">
-                    <TabsTrigger value="tasks">📋 Tasks ({tasks.length})</TabsTrigger>
-                    <TabsTrigger value="timeline">📜 Activity ({timeline.length})</TabsTrigger>
+                    <TabsTrigger value="tasks" className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Tasks ({tasks.length})</TabsTrigger>
+                    <TabsTrigger value="timeline" className="flex items-center gap-2"><Activity className="w-4 h-4" /> Activity ({timeline.length})</TabsTrigger>
                 </TabsList>
 
                 {/* TASKS TAB */}
@@ -303,8 +303,8 @@ export default function WorkspacePage() {
                                             <button
                                                 onClick={() => toggleTaskStatus(task.id, task.status)}
                                                 className={`w-5 h-5 rounded border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${task.status === 'done'
-                                                        ? 'bg-green-500 border-green-500 text-white'
-                                                        : 'border-zinc-300 hover:border-primary hover:bg-primary/10'
+                                                    ? 'bg-green-500 border-green-500 text-white'
+                                                    : 'border-zinc-300 hover:border-primary hover:bg-primary/10'
                                                     }`}
                                             >
                                                 {task.status === 'done' && <CheckCircle2 className="w-3 h-3" />}
@@ -353,8 +353,8 @@ export default function WorkspacePage() {
                                                     <Select value={task.priority} onValueChange={v => handleUpdateTask(task.id, 'priority', v)}>
                                                         <SelectTrigger className="h-6 w-auto border-none shadow-none p-0 text-xs">
                                                             <Badge variant="outline" className={`text-[10px] cursor-pointer ${task.priority === 'high' ? 'text-red-500 border-red-200 bg-red-50' :
-                                                                    task.priority === 'medium' ? 'text-yellow-600 border-yellow-200 bg-yellow-50' :
-                                                                        'text-green-600 border-green-200 bg-green-50'
+                                                                task.priority === 'medium' ? 'text-yellow-600 border-yellow-200 bg-yellow-50' :
+                                                                    'text-green-600 border-green-200 bg-green-50'
                                                                 }`}>
                                                                 {task.priority}
                                                             </Badge>
@@ -368,8 +368,8 @@ export default function WorkspacePage() {
 
                                                     {task.due_date && (
                                                         <div className={`flex items-center gap-1 text-xs ${task.status !== 'done' && new Date(task.due_date) < new Date()
-                                                                ? 'text-red-500 font-medium'
-                                                                : 'text-muted-foreground'
+                                                            ? 'text-red-500 font-medium'
+                                                            : 'text-muted-foreground'
                                                             }`}>
                                                             <Calendar className="w-3 h-3" />
                                                             {new Date(task.due_date).toLocaleDateString()} {new Date(task.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

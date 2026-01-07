@@ -1,28 +1,46 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Users, ShoppingCart, ListTodo, Settings, LogOut, UserCog, FileText, Briefcase, Sparkles, TrendingUp, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
     const [userInitial, setUserInitial] = useState('A');
     const [userName, setUserName] = useState('');
     const [stats, setStats] = useState({ leadsToday: 0, tasksOpen: 0, dealsWon: 0 });
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+    const isLoginPage = pathname === '/admin/login';
 
     useEffect(() => {
-        // Fetch user profile
+        // Skip auth check on login page
+        if (isLoginPage) {
+            setIsAuthenticated(false);
+            return;
+        }
+
+        // Fetch user profile to check authentication
         fetch('/api/admin/me')
             .then(res => res.json())
             .then(data => {
                 if (data.success && data.admin) {
+                    setIsAuthenticated(true);
                     setUserInitial(data.admin.email[0].toUpperCase());
                     setUserName(data.admin.name || data.admin.email.split('@')[0]);
+                } else {
+                    // Not authenticated, redirect to login
+                    setIsAuthenticated(false);
+                    router.push('/admin/login');
                 }
             })
-            .catch(err => console.error('Failed to fetch user profile:', err));
+            .catch(() => {
+                setIsAuthenticated(false);
+                router.push('/admin/login');
+            });
 
         // Fetch quick stats
         fetch('/api/admin/stats')
@@ -37,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 }
             })
             .catch(() => { });
-    }, []);
+    }, [pathname, isLoginPage, router]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -57,6 +75,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const getQuote = () => motivationalQuotes[new Date().getDate() % motivationalQuotes.length];
 
     const isActive = (path: string) => pathname === path;
+
+    // If loading auth state, show loading
+    if (isAuthenticated === null && !isLoginPage) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // If on login page, just render the login form without sidebar/header
+    if (isLoginPage) {
+        return <>{children}</>;
+    }
+
+    // If not authenticated and not login page, don't render anything (redirect in progress)
+    if (!isAuthenticated) {
+        return null;
+    }
 
     return (
         <div className="h-screen bg-zinc-50 dark:bg-zinc-950 flex overflow-hidden">

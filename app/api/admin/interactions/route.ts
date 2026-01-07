@@ -12,9 +12,9 @@ export async function GET(request: Request) {
 
         const connection = await pool.getConnection();
         try {
-            // Combine interactions and admin activity logs into one timeline
-            const [rows]: any = await connection.execute(
-                `(SELECT 
+            // Fetch from interactions table
+            const [interactions]: any = await connection.execute(
+                `SELECT 
                     i.id,
                     'interaction' AS source,
                     i.type AS action_type,
@@ -26,31 +26,45 @@ export async function GET(request: Request) {
                     i.created_at
                  FROM interactions i
                  LEFT JOIN customers c ON i.customer_id = c.id
-                 LEFT JOIN admins a ON i.created_by = a.id)
-                UNION ALL
-                (SELECT 
+                 LEFT JOIN admins a ON i.created_by = a.id
+                 ORDER BY i.created_at DESC
+                 LIMIT ?`,
+                [limit]
+            );
+
+            // Fetch from admin_activity_logs table
+            const [activityLogs]: any = await connection.execute(
+                `SELECT 
                     al.id,
                     'activity_log' AS source,
                     al.action_type,
                     al.action_description AS description,
                     al.entity_id AS customer_id,
-                    CASE WHEN al.entity_type = 'customer' THEN (SELECT name FROM customers WHERE id = al.entity_id) ELSE NULL END AS customer_name,
+                    NULL AS customer_name,
                     al.admin_id,
                     a.name AS admin_name,
                     al.created_at
                  FROM admin_activity_logs al
-                 LEFT JOIN admins a ON al.admin_id = a.id)
-                ORDER BY created_at DESC
-                LIMIT ?`,
+                 LEFT JOIN admins a ON al.admin_id = a.id
+                 ORDER BY al.created_at DESC
+                 LIMIT ?`,
                 [limit]
             );
-            return NextResponse.json({ success: true, interactions: rows });
+
+            // Combine and sort by created_at
+            const combined = [...interactions, ...activityLogs]
+                .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, limit);
+
+            console.log(`Timeline: ${interactions.length} interactions, ${activityLogs.length} activity_logs`);
+
+            return NextResponse.json({ success: true, interactions: combined });
         } finally {
             connection.release();
         }
     } catch (error) {
         console.error("Get Timeline Error:", error);
-        return NextResponse.json({ success: false, message: 'Failed to fetch timeline' }, { status: 500 });
+        return NextResponse.json({ success: false, message: 'Failed to fetch timeline', error: String(error) }, { status: 500 });
     }
 }
 
