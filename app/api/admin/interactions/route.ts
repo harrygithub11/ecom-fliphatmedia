@@ -28,12 +28,12 @@ export async function GET(request: Request) {
                  LEFT JOIN customers c ON i.customer_id = c.id
                  LEFT JOIN admins a ON i.created_by = a.id
                  ORDER BY i.created_at DESC
-                 LIMIT ?`,
-                [limit]
+                 LIMIT 100`
             );
 
-            // Try to also fetch admin_activity_logs (may not exist in all installations)
-            let activityLogs: any[] = [];
+            // Try to also fetch admin_activity_logs (disable for now to debug)
+            const activityLogs: any[] = [];
+            /*
             try {
                 const [logs]: any = await connection.execute(
                     `SELECT 
@@ -49,21 +49,20 @@ export async function GET(request: Request) {
                      FROM admin_activity_logs al
                      LEFT JOIN admins a ON al.admin_id = a.id
                      ORDER BY al.created_at DESC
-                     LIMIT ?`,
-                    [limit]
+                     LIMIT 100`
                 );
                 activityLogs = logs;
             } catch (e) {
-                // admin_activity_logs table might not exist - that's ok
-                console.log('admin_activity_logs query failed, using only interactions');
+                console.log('admin_activity_logs query failed', e);
             }
+            */
 
             // Combine and sort by created_at
             const combined = [...interactions, ...activityLogs]
                 .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                .slice(0, limit);
+                .slice(0, 100);
 
-            console.log(`Timeline API: ${interactions.length} interactions, ${activityLogs.length} activity_logs`);
+            console.log(`Timeline API: ${interactions.length} interactions found`);
 
             return NextResponse.json({ success: true, interactions: combined });
         } finally {

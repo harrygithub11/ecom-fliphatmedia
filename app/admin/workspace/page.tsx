@@ -31,6 +31,7 @@ interface Task {
     status: string;
     priority: string;
     created_at: string;
+    created_by_name?: string;
 }
 
 interface TimelineItem {
@@ -377,7 +378,8 @@ export default function WorkspacePage() {
                                                     )}
 
                                                     <span className="text-[10px] text-muted-foreground/50">
-                                                        Created {new Date(task.created_at).toLocaleDateString()}
+                                                        {task.created_by_name && `Created by ${task.created_by_name} • `}
+                                                        {new Date(task.created_at).toLocaleDateString()}
                                                     </span>
                                                 </div>
                                             </div>

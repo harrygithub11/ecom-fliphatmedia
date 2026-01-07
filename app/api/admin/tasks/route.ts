@@ -10,9 +10,10 @@ export async function GET(request: Request) {
         const priority = searchParams.get('priority');
 
         let query = `
-            SELECT t.*, c.name AS customer_name, c.email AS customer_email
+            SELECT t.*, c.name AS customer_name, c.email AS customer_email, a.name AS created_by_name
             FROM tasks t
             LEFT JOIN customers c ON t.customer_id = c.id
+            LEFT JOIN admins a ON t.created_by = a.id
             WHERE 1=1
         `;
         const params: any[] = [];
@@ -46,11 +47,15 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { title, customer_id, due_date, priority } = body;
 
+        const { getSession } = await import('@/lib/auth');
+        const session = await getSession();
+        const createdBy = session ? session.id : null;
+
         const connection = await pool.getConnection();
         try {
             const [result]: any = await connection.execute(
-                'INSERT INTO tasks (title, customer_id, due_date, priority, status) VALUES (?, ?, ?, ?, ?)',
-                [title, customer_id, due_date || null, priority || 'medium', 'open']
+                'INSERT INTO tasks (title, customer_id, due_date, priority, status, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+                [title, customer_id, due_date || null, priority || 'medium', 'open', createdBy]
             );
 
             // Log Admin Activity
