@@ -83,7 +83,23 @@ export async function GET() {
                 GROUP BY source
             `);
 
+            // 9. Leads created today (for header)
+            const [leadsTodayResult]: any = await connection.execute(`
+                SELECT COUNT(*) as count FROM customers WHERE DATE(created_at) = CURDATE()
+            `);
+
+            // 10. Open tasks count (for header)
+            const [openTasksResult]: any = await connection.execute(`
+                SELECT COUNT(*) as count FROM tasks WHERE status != 'done'
+            `);
+
+            // 11. Deals won (completed orders)
+            const [dealsWonResult]: any = await connection.execute(`
+                SELECT COUNT(*) as count FROM orders WHERE status IN ('paid', 'delivered', 'completed')
+            `);
+
             return NextResponse.json({
+                success: true,
                 revenue: revenueResult[0].total_revenue,
                 totalLeads: leadsResult[0].total_leads,
                 pendingOnboarding: pendingResult[0].pending_count,
@@ -91,7 +107,11 @@ export async function GET() {
                 activity: activityResult,
                 chartData: chartData,
                 statusBreakdown: statusBreakdown,
-                sourceBreakdown: sourceBreakdown
+                sourceBreakdown: sourceBreakdown,
+                // Header stats
+                leadsToday: leadsTodayResult[0]?.count || 0,
+                openTasks: openTasksResult[0]?.count || 0,
+                dealsWon: dealsWonResult[0]?.count || 0
             });
 
         } finally {

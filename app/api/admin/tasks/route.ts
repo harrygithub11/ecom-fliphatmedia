@@ -126,3 +126,44 @@ export async function PUT(request: Request) {
         return NextResponse.json({ success: false, message: 'Failed to update task' }, { status: 500 });
     }
 }
+
+export async function DELETE(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ success: false, message: 'Task ID required' }, { status: 400 });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Get task info before deleting for logging
+            const [taskRows]: any = await connection.execute('SELECT title FROM tasks WHERE id = ?', [id]);
+            const taskTitle = taskRows[0]?.title || 'Unknown';
+
+            await connection.execute('DELETE FROM tasks WHERE id = ?', [id]);
+
+            // Log Admin Activity
+            const { getSession } = await import('@/lib/auth');
+            const session = await getSession();
+            if (session) {
+                const { logAdminActivity } = await import('@/lib/activity-logger');
+                await logAdminActivity(
+                    session.id,
+                    'task_delete',
+                    `Deleted task "${taskTitle}"`,
+                    'task',
+                    parseInt(id)
+                );
+            }
+            return NextResponse.json({ success: true });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error("Delete Task Error:", error);
+        return NextResponse.json({ success: false, message: 'Failed to delete task' }, { status: 500 });
+    }
+}
+

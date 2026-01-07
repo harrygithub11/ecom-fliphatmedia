@@ -218,7 +218,7 @@ export default function LeadsPage() {
                                 <Label className="text-right">Source</Label>
                                 <Select value={newLeadSource} onValueChange={setNewLeadSource}>
                                     <SelectTrigger className="col-span-3"><SelectValue placeholder="Select source" /></SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="z-[9999]">
                                         <SelectItem value="manual">Manual Entry</SelectItem>
                                         <SelectItem value="phone">Phone Call</SelectItem>
                                         <SelectItem value="whatsapp">WhatsApp</SelectItem>

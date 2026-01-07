@@ -4,22 +4,44 @@ export const dynamic = 'force-dynamic';
 import pool from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
-// GET: Fetch all interactions for global timeline
+// GET: Fetch combined timeline (interactions + admin activity logs)
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const limit = parseInt(searchParams.get('limit') || '50');
+        const limit = parseInt(searchParams.get('limit') || '100');
 
         const connection = await pool.getConnection();
         try {
+            // Combine interactions and admin activity logs into one timeline
             const [rows]: any = await connection.execute(
-                `SELECT i.*, c.name AS customer_name, c.email AS customer_email,
-                        a.name AS created_by_name
+                `(SELECT 
+                    i.id,
+                    'interaction' AS source,
+                    i.type AS action_type,
+                    i.content AS description,
+                    i.customer_id,
+                    c.name AS customer_name,
+                    i.created_by AS admin_id,
+                    a.name AS admin_name,
+                    i.created_at
                  FROM interactions i
                  LEFT JOIN customers c ON i.customer_id = c.id
-                 LEFT JOIN admins a ON i.created_by = a.id
-                 ORDER BY i.created_at DESC
-                 LIMIT ?`,
+                 LEFT JOIN admins a ON i.created_by = a.id)
+                UNION ALL
+                (SELECT 
+                    al.id,
+                    'activity_log' AS source,
+                    al.action_type,
+                    al.action_description AS description,
+                    al.entity_id AS customer_id,
+                    CASE WHEN al.entity_type = 'customer' THEN (SELECT name FROM customers WHERE id = al.entity_id) ELSE NULL END AS customer_name,
+                    al.admin_id,
+                    a.name AS admin_name,
+                    al.created_at
+                 FROM admin_activity_logs al
+                 LEFT JOIN admins a ON al.admin_id = a.id)
+                ORDER BY created_at DESC
+                LIMIT ?`,
                 [limit]
             );
             return NextResponse.json({ success: true, interactions: rows });
@@ -27,8 +49,8 @@ export async function GET(request: Request) {
             connection.release();
         }
     } catch (error) {
-        console.error("Get Interactions Error:", error);
-        return NextResponse.json({ success: false, message: 'Failed to fetch interactions' }, { status: 500 });
+        console.error("Get Timeline Error:", error);
+        return NextResponse.json({ success: false, message: 'Failed to fetch timeline' }, { status: 500 });
     }
 }
 

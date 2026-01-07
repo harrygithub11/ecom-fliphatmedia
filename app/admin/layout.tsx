@@ -2,26 +2,59 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, ListTodo, Settings, LogOut, Search, UserCog, FileText, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, ListTodo, Settings, LogOut, UserCog, FileText, Briefcase, Sparkles, TrendingUp, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const [userInitial, setUserInitial] = useState('A'); // Default fallback
+    const [userInitial, setUserInitial] = useState('A');
+    const [userName, setUserName] = useState('');
+    const [stats, setStats] = useState({ leadsToday: 0, tasksOpen: 0, dealsWon: 0 });
 
     useEffect(() => {
-        // Fetch user profile from API
+        // Fetch user profile
         fetch('/api/admin/me')
             .then(res => res.json())
             .then(data => {
-                if (data.success && data.admin?.email) {
+                if (data.success && data.admin) {
                     setUserInitial(data.admin.email[0].toUpperCase());
+                    setUserName(data.admin.name || data.admin.email.split('@')[0]);
                 }
             })
             .catch(err => console.error('Failed to fetch user profile:', err));
+
+        // Fetch quick stats
+        fetch('/api/admin/stats')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setStats({
+                        leadsToday: data.leadsToday || 0,
+                        tasksOpen: data.openTasks || 0,
+                        dealsWon: data.dealsWon || 0
+                    });
+                }
+            })
+            .catch(() => { });
     }, []);
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning';
+        if (hour < 17) return 'Good Afternoon';
+        return 'Good Evening';
+    };
+
+    const motivationalQuotes = [
+        "Every sale starts with a conversation. Make it count! 🚀",
+        "Success is built one client at a time. Keep going! 💪",
+        "Today's effort is tomorrow's success. Stay focused! ⭐",
+        "Your next big deal is just one call away! 📞",
+        "Consistency beats talent. Show up every day! 🔥"
+    ];
+
+    const getQuote = () => motivationalQuotes[new Date().getDate() % motivationalQuotes.length];
 
     const isActive = (path: string) => pathname === path;
 
@@ -68,11 +101,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 {/* Decorative Overlay Shapes */}
                 <div className="absolute bottom-0 left-0 pointer-events-none z-0">
-                    {/* Big Quarter Circle */}
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-tr-[100%] translate-y-1/2 -translate-x-1/2"></div>
-                    {/* Medium Quarter Circle */}
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-tr-[100%] translate-y-1/3 -translate-x-1/3"></div>
-                    {/* Small Accent */}
                     <div className="absolute bottom-8 left-8 w-4 h-4 rounded-full bg-primary/20"></div>
                     <div className="absolute bottom-16 left-4 w-2 h-2 rounded-full bg-primary/20"></div>
                 </div>
@@ -80,16 +110,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col h-full overflow-hidden">
-                {/* Top Bar */}
-                <header className="h-16 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 shrink-0 z-40 bg-opacity-95 backdrop-blur-sm">
-                    <div className="w-full max-w-md relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Global Search (Email, Name, Order ID)..." className="pl-10 h-10 bg-zinc-50 dark:bg-zinc-950 border-none ring-1 ring-zinc-200 dark:ring-zinc-800" />
-                    </div>
+                {/* Top Bar - Greeting & Performance */}
+                <header className="h-20 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 shrink-0 z-40">
+                    {/* Left: Greeting */}
                     <div className="flex items-center gap-4">
-                        <Link href="/admin/profile" className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm hover:ring-2 ring-primary/20 transition-all">
+                        <Link href="/admin/profile" className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground flex items-center justify-center font-bold text-lg hover:ring-4 ring-primary/20 transition-all shadow-lg">
                             {userInitial}
                         </Link>
+                        <div>
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                {getGreeting()}, <span className="text-primary">{userName || 'Admin'}</span>
+                                <Sparkles className="w-4 h-4 text-yellow-500" />
+                            </h2>
+                            <p className="text-xs text-muted-foreground max-w-md truncate">{getQuote()}</p>
+                        </div>
+                    </div>
+
+                    {/* Right: Quick Stats */}
+                    <div className="flex items-center gap-6">
+                        <div className="text-center">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Leads Today</p>
+                            <p className="text-xl font-bold text-primary flex items-center justify-center gap-1">
+                                <TrendingUp className="w-4 h-4" /> {stats.leadsToday}
+                            </p>
+                        </div>
+                        <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700"></div>
+                        <div className="text-center">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Open Tasks</p>
+                            <p className="text-xl font-bold text-orange-500">{stats.tasksOpen}</p>
+                        </div>
+                        <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700"></div>
+                        <div className="text-center">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Deals Won</p>
+                            <p className="text-xl font-bold text-green-500 flex items-center justify-center gap-1">
+                                <Target className="w-4 h-4" /> {stats.dealsWon}
+                            </p>
+                        </div>
                     </div>
                 </header>
 
