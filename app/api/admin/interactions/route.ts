@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import pool from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
-// GET: Fetch combined timeline (interactions + admin activity logs)
+// GET: Fetch timeline from interactions table  
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
         const connection = await pool.getConnection();
         try {
-            // Fetch from interactions table
+            // Fetch from interactions table - the main timeline source
             const [interactions]: any = await connection.execute(
                 `SELECT 
                     i.id,
@@ -32,31 +32,38 @@ export async function GET(request: Request) {
                 [limit]
             );
 
-            // Fetch from admin_activity_logs table
-            const [activityLogs]: any = await connection.execute(
-                `SELECT 
-                    al.id,
-                    'activity_log' AS source,
-                    al.action_type,
-                    al.action_description AS description,
-                    al.entity_id AS customer_id,
-                    NULL AS customer_name,
-                    al.admin_id,
-                    a.name AS admin_name,
-                    al.created_at
-                 FROM admin_activity_logs al
-                 LEFT JOIN admins a ON al.admin_id = a.id
-                 ORDER BY al.created_at DESC
-                 LIMIT ?`,
-                [limit]
-            );
+            // Try to also fetch admin_activity_logs (may not exist in all installations)
+            let activityLogs: any[] = [];
+            try {
+                const [logs]: any = await connection.execute(
+                    `SELECT 
+                        al.id,
+                        'activity_log' AS source,
+                        al.action_type,
+                        al.action_description AS description,
+                        al.entity_id AS customer_id,
+                        NULL AS customer_name,
+                        al.admin_id,
+                        a.name AS admin_name,
+                        al.created_at
+                     FROM admin_activity_logs al
+                     LEFT JOIN admins a ON al.admin_id = a.id
+                     ORDER BY al.created_at DESC
+                     LIMIT ?`,
+                    [limit]
+                );
+                activityLogs = logs;
+            } catch (e) {
+                // admin_activity_logs table might not exist - that's ok
+                console.log('admin_activity_logs query failed, using only interactions');
+            }
 
             // Combine and sort by created_at
             const combined = [...interactions, ...activityLogs]
                 .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                 .slice(0, limit);
 
-            console.log(`Timeline: ${interactions.length} interactions, ${activityLogs.length} activity_logs`);
+            console.log(`Timeline API: ${interactions.length} interactions, ${activityLogs.length} activity_logs`);
 
             return NextResponse.json({ success: true, interactions: combined });
         } finally {
