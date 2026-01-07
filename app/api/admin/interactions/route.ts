@@ -37,8 +37,7 @@ export async function GET(request: Request) {
                 params.push(adminId);
             }
 
-            query += ` ORDER BY i.created_at DESC LIMIT ?`;
-            params.push(limit);
+            query += ` ORDER BY i.created_at DESC LIMIT ${limit}`;
 
             // Fetch from interactions table - the main timeline source
             const [interactions]: any = await connection.execute(query, params);
