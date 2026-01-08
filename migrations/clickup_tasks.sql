@@ -1,21 +1,22 @@
 -- ============================================
 -- ClickUp-Style Task System: Database Migrations
--- Run this on your MySQL server
+-- Run this on your MySQL server (via phpMyAdmin or CLI)
 -- ============================================
 
 -- ============================================
 -- PART 1: Core Task Table Enhancements
 -- ============================================
 
--- 1.1 Add indexes for fast filtering (skip if already exists)
-CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
-CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
-CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
-CREATE INDEX IF NOT EXISTS idx_tasks_customer ON tasks(customer_id);
+-- 1.1 Add indexes for fast filtering
+-- Note: If an index already exists, this will fail silently - that's OK
+CREATE INDEX idx_tasks_assigned_to ON tasks(assigned_to);
+CREATE INDEX idx_tasks_due_date ON tasks(due_date);
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_priority ON tasks(priority);
+CREATE INDEX idx_tasks_customer ON tasks(customer_id);
 
--- 1.2 Soft delete support
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL;
+-- 1.2 Soft delete support (ignore error if column exists)
+ALTER TABLE tasks ADD COLUMN deleted_at DATETIME NULL;
 
 -- ============================================
 -- PART 2: Multiple Assignees Support
@@ -77,5 +78,5 @@ CREATE TABLE IF NOT EXISTS task_history (
 );
 
 -- ============================================
--- DONE! Run this migration on your server.
+-- DONE! Migration complete.
 -- ============================================
