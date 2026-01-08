@@ -11,10 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     CheckCircle2, Clock, Phone, MessageSquare, FileText, User, RefreshCw, Plus,
     MoreHorizontal, Pencil, Trash2, Calendar, AlertCircle, Activity, UserCheck,
-    ArrowUpRight, Settings, Circle, ChevronDown, ListTodo
+    ArrowUpRight, Settings, Circle, ChevronDown, ListTodo, Package, History
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,6 +24,7 @@ interface Task {
     title: string;
     description?: string;
     customer_id: number;
+    related_order_id?: number;
     customer_name: string;
     customer_email: string;
     assigned_to?: number;
@@ -473,9 +475,20 @@ export default function WorkspacePage() {
                                         </Select>
 
                                         {task.status_changed_by_name && (
-                                            <span className="text-[10px] text-muted-foreground mt-2 whitespace-nowrap hidden sm:block">
-                                                By {task.status_changed_by_name?.split(' ')[0]}
-                                            </span>
+                                            <TooltipProvider delayDuration={300}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="mt-2 flex justify-center cursor-help opacity-50 hover:opacity-100 transition-opacity">
+                                                            <History className="w-3.5 h-3.5 text-muted-foreground" />
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="right" className="text-xs max-w-[200px]">
+                                                        <p className="font-semibold mb-1">Status History</p>
+                                                        <p>Updated by <span className="text-primary">{task.status_changed_by_name}</span></p>
+                                                        <p className="text-muted-foreground">{task.status_changed_at ? new Date(task.status_changed_at).toLocaleString() : ''}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         )}
                                     </div>
 
@@ -530,6 +543,18 @@ export default function WorkspacePage() {
                                                     {task.customer_name}
                                                 </Link>
                                             )}
+
+                                            {task.related_order_id && (
+                                                <Link href={`/admin/orders/${task.related_order_id}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition-colors dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30">
+                                                    <Package className="w-3.5 h-3.5" />
+                                                    Order #{task.related_order_id}
+                                                </Link>
+                                            )}
+
+                                            <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400" title={new Date(task.created_at).toLocaleString()}>
+                                                <Clock className="w-3.5 h-3.5" />
+                                                <span className="hidden sm:inline">{new Date(task.created_at).toLocaleDateString()}</span>
+                                            </div>
 
                                             <div className="flex items-center gap-1.5">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
