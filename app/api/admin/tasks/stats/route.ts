@@ -10,7 +10,6 @@ export async function GET() {
             const [statusCounts]: any = await connection.execute(`
                 SELECT status, COUNT(*) as count
                 FROM tasks
-                WHERE deleted_at IS NULL
                 GROUP BY status
             `);
 
@@ -18,7 +17,6 @@ export async function GET() {
             const [priorityCounts]: any = await connection.execute(`
                 SELECT priority, COUNT(*) as count
                 FROM tasks
-                WHERE deleted_at IS NULL
                 GROUP BY priority
             `);
 
@@ -26,8 +24,7 @@ export async function GET() {
             const [overdueResult]: any = await connection.execute(`
                 SELECT COUNT(*) as count
                 FROM tasks
-                WHERE deleted_at IS NULL
-                  AND status != 'done'
+                WHERE status != 'done'
                   AND due_date < NOW()
             `);
 
@@ -35,15 +32,14 @@ export async function GET() {
             const [dueTodayResult]: any = await connection.execute(`
                 SELECT COUNT(*) as count
                 FROM tasks
-                WHERE deleted_at IS NULL
-                  AND DATE(due_date) = CURDATE()
+                WHERE DATE(due_date) = CURDATE()
             `);
 
             // Tasks by assignee
             const [assigneeCounts]: any = await connection.execute(`
                 SELECT a.id, a.name, COUNT(t.id) as count
                 FROM admins a
-                LEFT JOIN tasks t ON t.assigned_to = a.id AND t.deleted_at IS NULL
+                LEFT JOIN tasks t ON t.assigned_to = a.id
                 GROUP BY a.id, a.name
                 ORDER BY count DESC
             `);
