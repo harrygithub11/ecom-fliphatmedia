@@ -17,7 +17,7 @@ export function deepMerge(target: any, source: any) {
     const sourceValue = source[key];
 
     if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
-      target[key] = targetValue.concat(sourceValue);
+      target[key] = sourceValue;
     } else if (isObject(targetValue) && isObject(sourceValue)) {
       target[key] = deepMerge(Object.assign({}, targetValue), sourceValue);
     } else {
