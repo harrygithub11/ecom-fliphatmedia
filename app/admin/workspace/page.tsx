@@ -18,6 +18,7 @@ import {
     ArrowUpRight, Settings, Circle, ChevronDown, ListTodo, Package, History
 } from 'lucide-react';
 import Link from 'next/link';
+import { KanbanBoard } from '@/components/admin/KanbanBoard';
 
 interface Task {
     id: number;
@@ -66,6 +67,7 @@ export default function WorkspacePage() {
     const [priorityFilter, setPriorityFilter] = useState('all');
     const [userFilter, setUserFilter] = useState('all');
     const [activityUserFilter, setActivityUserFilter] = useState('all');
+    const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
 
     // Add Task Dialog
     const [addTaskOpen, setAddTaskOpen] = useState(false);
@@ -427,6 +429,26 @@ export default function WorkspacePage() {
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {/* View Toggle */}
+                        <div className="flex items-center border rounded-lg overflow-hidden ml-2">
+                            <Button
+                                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                                size="sm"
+                                className="h-8 rounded-none px-3"
+                                onClick={() => setViewMode('list')}
+                            >
+                                <ListTodo className="w-4 h-4" />
+                            </Button>
+                            <Button
+                                variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+                                size="sm"
+                                className="h-8 rounded-none px-3"
+                                onClick={() => setViewMode('kanban')}
+                            >
+                                <Settings className="w-4 h-4" />
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -443,6 +465,12 @@ export default function WorkspacePage() {
                             </p>
                             <Button variant="outline" className="mt-6" onClick={() => setAddTaskOpen(true)}>Create Task</Button>
                         </div>
+                    ) : viewMode === 'kanban' ? (
+                        <KanbanBoard
+                            tasks={tasks}
+                            onStatusChange={(taskId, newStatus) => handleUpdateTask(taskId, 'status', newStatus)}
+                            onTaskClick={(task) => { setEditingTask(task); setEditTaskOpen(true); }}
+                        />
                     ) : (
                         <div className="grid gap-3">
                             {tasks.map(task => (

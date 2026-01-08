@@ -2,13 +2,19 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-// GET: Fetch all tasks with customer info
+// GET: Fetch all tasks with customer info (enhanced with pagination, search, sort)
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
         const priority = searchParams.get('priority');
         const createdBy = searchParams.get('created_by');
+        const assignedTo = searchParams.get('assigned_to');
+        const search = searchParams.get('search');
+        const sort = searchParams.get('sort') || 'due_asc';
+        const page = parseInt(searchParams.get('page') || '1');
+        const perPage = parseInt(searchParams.get('per_page') || '50');
+        const offset = (page - 1) * perPage;
 
         let query = `
             SELECT t.*, c.name AS customer_name, c.email AS customer_email, 
@@ -20,15 +26,15 @@ export async function GET(request: Request) {
             LEFT JOIN admins a ON t.created_by = a.id
             LEFT JOIN admins asg ON t.assigned_to = asg.id
             LEFT JOIN admins sc ON t.status_changed_by = sc.id
-            WHERE 1 = 1
+            WHERE t.deleted_at IS NULL
         `;
         const params: any[] = [];
 
-        if (status) {
+        if (status && status !== 'all') {
             query += ` AND t.status = ? `;
             params.push(status);
         }
-        if (priority) {
+        if (priority && priority !== 'all') {
             query += ` AND t.priority = ? `;
             params.push(priority);
         }
@@ -36,13 +42,54 @@ export async function GET(request: Request) {
             query += ` AND t.created_by = ? `;
             params.push(createdBy);
         }
+        if (assignedTo && assignedTo !== 'all') {
+            query += ` AND t.assigned_to = ? `;
+            params.push(assignedTo);
+        }
+        if (search) {
+            query += ` AND (t.title LIKE ? OR t.description LIKE ?) `;
+            params.push(`%${search}%`, `%${search}%`);
+        }
 
-        query += ` ORDER BY t.due_date ASC, t.created_at DESC`;
+        // Sorting
+        switch (sort) {
+            case 'due_desc':
+                query += ` ORDER BY t.due_date DESC, t.created_at DESC`;
+                break;
+            case 'priority':
+                query += ` ORDER BY FIELD(t.priority, 'high', 'medium', 'low'), t.due_date ASC`;
+                break;
+            case 'created':
+                query += ` ORDER BY t.created_at DESC`;
+                break;
+            case 'due_asc':
+            default:
+                query += ` ORDER BY t.due_date ASC, t.created_at DESC`;
+        }
+
+        query += ` LIMIT ? OFFSET ?`;
+        params.push(perPage, offset);
 
         const connection = await pool.getConnection();
         try {
             const [rows]: any = await connection.execute(query, params);
-            return NextResponse.json({ success: true, tasks: rows });
+
+            // Get total count for pagination
+            const [countResult]: any = await connection.execute(
+                `SELECT COUNT(*) as total FROM tasks WHERE deleted_at IS NULL`
+            );
+            const total = countResult[0]?.total || 0;
+
+            return NextResponse.json({
+                success: true,
+                tasks: rows,
+                pagination: {
+                    page,
+                    perPage,
+                    total,
+                    totalPages: Math.ceil(total / perPage)
+                }
+            });
         } finally {
             connection.release();
         }
