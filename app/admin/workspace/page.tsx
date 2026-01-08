@@ -367,7 +367,7 @@ export default function WorkspacePage() {
             </div>
 
             <Tabs defaultValue="tasks" className="w-full">
-                <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-1 mb-6">
                     <TabsList className="bg-transparent h-auto p-0 gap-6">
                         <TabsTrigger
                             value="tasks"
@@ -384,7 +384,7 @@ export default function WorkspacePage() {
                     </TabsList>
 
                     {/* Filters Toolbar - Only visible for tasks tab but kept in flex for alignment */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="h-8 border-dashed border-zinc-300 dark:border-zinc-700 bg-transparent min-w-[100px] text-xs font-medium">
                                 <div className="flex items-center gap-2 text-muted-foreground">

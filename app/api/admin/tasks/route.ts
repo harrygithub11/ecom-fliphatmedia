@@ -26,7 +26,7 @@ export async function GET(request: Request) {
             LEFT JOIN admins a ON t.created_by = a.id
             LEFT JOIN admins asg ON t.assigned_to = asg.id
             LEFT JOIN admins sc ON t.status_changed_by = sc.id
-            WHERE t.deleted_at IS NULL
+            WHERE 1=1
         `;
         const params: any[] = [];
 
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
 
             // Get total count for pagination
             const [countResult]: any = await connection.execute(
-                `SELECT COUNT(*) as total FROM tasks WHERE deleted_at IS NULL`
+                `SELECT COUNT(*) as total FROM tasks`
             );
             const total = countResult[0]?.total || 0;
 
