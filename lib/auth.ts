@@ -21,8 +21,8 @@ export async function createSession(admin: AdminSession) {
 
     cookies().set('admin_session', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: false, // Allow in development (http)
+        sameSite: 'strict', // Changed from 'lax' to 'strict' for same-origin only
         maxAge: 60 * 60 * 24, // 24 hours
         path: '/',
     });
