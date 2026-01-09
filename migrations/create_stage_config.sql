@@ -20,4 +20,8 @@ INSERT INTO lead_stages (value, label, color, display_order) VALUES
 ('negotiation', 'Negotiating', 'orange', 7),
 ('won', 'Won 💰', 'green', 8),
 ('lost', 'Lost', 'gray', 9)
-ON DUPLICATE KEY UPDATE label=VALUES(label), color=VALUES(color), display_order=VALUES(display_order);
+AS new_values
+ON DUPLICATE KEY UPDATE 
+    label = new_values.label, 
+    color = new_values.color, 
+    display_order = new_values.display_order;

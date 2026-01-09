@@ -54,6 +54,9 @@ export default function LeadsPage() {
     // Dynamic stages
     const [stages, setStages] = useState<{ id: number, value: string, label: string, color: string }[]>([]);
 
+    // Dynamic scores
+    const [scores, setScores] = useState<{ id: number, value: string, label: string, color: string, emoji: string }[]>([]);
+
     useEffect(() => {
         async function fetchLeads() {
             try {
@@ -99,18 +102,35 @@ export default function LeadsPage() {
             }
         }
 
+        async function fetchScores() {
+            try {
+                const res = await fetch('/api/admin/scores');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.scores)) setScores(data.scores);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
         fetchLeads();
         fetchAdmins();
         fetchCurrentUser();
         fetchStages();
+        fetchScores();
     }, []);
 
     const getScoreBadge = (score: string) => {
-        switch (score) {
-            case 'hot': return <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200">Hot 🔥</Badge>;
-            case 'warm': return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200">Warm 🌤️</Badge>;
-            default: return <Badge variant="outline" className="text-muted-foreground">Cold ❄️</Badge>;
-        }
+        const scoreConfig = scores.find(s => s.value === score);
+        if (!scoreConfig) return <Badge variant="outline" className="text-muted-foreground">Unknown</Badge>;
+
+        const colorClasses: Record<string, string> = {
+            'red': 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200',
+            'yellow': 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200',
+            'gray': 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200'
+        };
+
+        const className = colorClasses[scoreConfig.color] || 'bg-gray-100 text-gray-700';
+        return <Badge className={className}>{scoreConfig.label} {scoreConfig.emoji}</Badge>;
     };
 
     const handleSaveLead = async () => {
@@ -342,15 +362,21 @@ export default function LeadsPage() {
                                                     <SelectValue placeholder="Score" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="hot">
-                                                        <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200 pointer-events-none">Hot 🔥</Badge>
-                                                    </SelectItem>
-                                                    <SelectItem value="warm">
-                                                        <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200 pointer-events-none">Warm 🌤️</Badge>
-                                                    </SelectItem>
-                                                    <SelectItem value="cold">
-                                                        <Badge variant="outline" className="text-muted-foreground pointer-events-none">Cold ❄️</Badge>
-                                                    </SelectItem>
+                                                    {scores.map(score => {
+                                                        const colorClasses: Record<string, string> = {
+                                                            'red': 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200',
+                                                            'yellow': 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200',
+                                                            'gray': 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200'
+                                                        };
+                                                        const className = colorClasses[score.color] || '';
+                                                        return (
+                                                            <SelectItem key={score.id} value={score.value}>
+                                                                <Badge className={`${className} pointer-events-none`}>
+                                                                    {score.label} {score.emoji}
+                                                                </Badge>
+                                                            </SelectItem>
+                                                        );
+                                                    })}
                                                 </SelectContent>
                                             </Select>
                                         </TableCell>

@@ -129,6 +129,9 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
     // Dynamic stages
     const [stages, setStages] = useState<{ id: number, value: string, label: string, color: string }[]>([]);
 
+    // Dynamic scores
+    const [scores, setScores] = useState<{ id: number, value: string, label: string, color: string, emoji: string }[]>([]);
+
     useEffect(() => {
         async function fetchProfile() {
             try {
@@ -154,8 +157,19 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
             }
         }
 
+        async function fetchScores() {
+            try {
+                const res = await fetch('/api/admin/scores');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.scores)) setScores(data.scores);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
         fetchProfile();
         fetchStages();
+        fetchScores();
     }, [params.id]);
 
     if (loading) return <div className="p-10 text-center">Loading 360 View...</div>;
@@ -438,9 +452,11 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                                     <SelectValue placeholder="Score" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="hot">HOT 🔥</SelectItem>
-                                    <SelectItem value="warm">WARM 🌤️</SelectItem>
-                                    <SelectItem value="cold">COLD ❄️</SelectItem>
+                                    {scores.map(score => (
+                                        <SelectItem key={score.id} value={score.value}>
+                                            {score.label} {score.emoji}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
