@@ -9,12 +9,18 @@ export const dynamic = 'force-dynamic';
 function detectColumn(headers: string[], patterns: string[]): string | null {
     const normalized = headers.map(h => h.toLowerCase().trim());
 
+    // First try exact match
     for (const pattern of patterns) {
-        const index = normalized.findIndex(h =>
-            h.includes(pattern) || pattern.includes(h)
-        );
+        const index = normalized.findIndex(h => h === pattern);
         if (index !== -1) return headers[index];
     }
+
+    // Then try includes match
+    for (const pattern of patterns) {
+        const index = normalized.findIndex(h => h.includes(pattern));
+        if (index !== -1) return headers[index];
+    }
+
     return null;
 }
 
@@ -69,10 +75,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, message: 'CSV has no columns' }, { status: 400 });
         }
 
-        // Auto-detect columns
-        const namePatterns = ['name', 'full name', 'customer name', 'first name', 'contact name', 'client name'];
-        const phonePatterns = ['phone', 'mobile', 'cell', 'telephone', 'contact number', 'phone number', 'number'];
-        const emailPatterns = ['email', 'e-mail', 'email address', 'contact email', 'mail'];
+        // Auto-detect columns (prioritize exact/specific matches)
+        const namePatterns = ['full_name', 'full name', 'customer_name', 'customer name', 'contact_name', 'contact name', 'name', 'client_name', 'client name'];
+        const phonePatterns = ['phone_number', 'phone number', 'mobile_number', 'mobile number', 'phone', 'mobile', 'cell', 'telephone', 'contact_number', 'contact number', 'number'];
+        const emailPatterns = ['email_address', 'email address', 'email', 'e-mail', 'e_mail', 'contact_email', 'contact email', 'mail'];
 
         const nameCol = detectColumn(headers, namePatterns);
         const phoneCol = detectColumn(headers, phonePatterns);
