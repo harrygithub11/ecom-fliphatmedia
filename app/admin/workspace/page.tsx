@@ -755,12 +755,26 @@ export default function WorkspacePage() {
                                                 onValueChange={v => updateTask(task.id, { assigned_to: v === 'unassigned' ? undefined : Number(v) } as any)}
                                             >
                                                 <SelectTrigger className="ml-auto w-auto h-auto border-none shadow-none p-0 [&>svg]:hidden focus:ring-0">
-                                                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium uppercase tracking-wide border transition-all hover:border-primary/50 cursor-pointer ${task.assigned_name
-                                                        ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-900/30'
-                                                        : 'text-zinc-400 border-transparent hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                                                        }`}>
-                                                        {task.assigned_name ? `Assigned to ${task.assigned_name}` : 'Unassigned'}
-                                                    </div>
+                                                    {task.assigned_to ? (() => {
+                                                        const assignedMember = team.find(m => m.id === task.assigned_to);
+                                                        const firstName = task.assigned_name?.split(' ')[0] || task.assigned_name || 'Unknown';
+                                                        return (
+                                                            <div className="flex items-center gap-2 px-2 py-1 rounded-full border border-zinc-200 dark:border-zinc-700 hover:border-primary/50 transition-all cursor-pointer">
+                                                                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold overflow-hidden">
+                                                                    {assignedMember?.avatar_url ? (
+                                                                        <img src={assignedMember.avatar_url} alt={firstName} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        firstName.charAt(0).toUpperCase()
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-sm font-medium text-foreground">{firstName}</span>
+                                                            </div>
+                                                        );
+                                                    })() : (
+                                                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium uppercase tracking-wide border border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 transition-all cursor-pointer">
+                                                            Unassigned
+                                                        </div>
+                                                    )}
                                                 </SelectTrigger>
                                                 <SelectContent align="end">
                                                     <SelectItem value="unassigned">Unassigned</SelectItem>
