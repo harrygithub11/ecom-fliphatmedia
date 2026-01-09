@@ -547,9 +547,13 @@ export default function WorkspacePage() {
                         {/* User Filter */}
                         <Select value={userFilter} onValueChange={setUserFilter}>
                             <SelectTrigger className="h-9 w-auto min-w-[110px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-xs font-medium rounded-lg shadow-sm">
-                                <span className="flex items-center gap-2">
-                                    <User className="w-3.5 h-3.5 text-zinc-500" />
-                                    {userFilter === 'all' ? 'User' : 'Selected User'}
+                                <span className="flex items-center gap-2 max-w-[150px]">
+                                    <User className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                                    <span className="truncate">
+                                        {userFilter === 'all'
+                                            ? 'User'
+                                            : team.find(member => String(member.id) === userFilter)?.name || 'User'}
+                                    </span>
                                 </span>
                             </SelectTrigger>
                             <SelectContent>

@@ -7,12 +7,11 @@ export async function GET() {
         try {
             await connection.beginTransaction();
 
-            // 1. Clear existing data (optional, but good for clean slate)
-            // await connection.execute('DELETE FROM tasks');
-            // await connection.execute('DELETE FROM interactions');
-            // await connection.execute('DELETE FROM project_submissions');
-            // await connection.execute('DELETE FROM orders');
-            // await connection.execute('DELETE FROM customers');
+            // 1. Check if data already exists to prevent duplicates
+            const [existing]: any = await connection.execute("SELECT id FROM customers WHERE email = 'alice@fashion.com'");
+            if (existing.length > 0) {
+                return NextResponse.json({ success: true, message: 'Database already seeded' });
+            }
 
             // 2. Insert Customers
             const customers = [

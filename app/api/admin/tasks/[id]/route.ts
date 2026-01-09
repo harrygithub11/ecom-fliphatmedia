@@ -78,6 +78,138 @@ export async function GET(
     }
 }
 
+// PUT: Update task and log history
+export async function PUT(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const taskId = params.id;
+        const body = await request.json();
+        const { getSession } = await import('@/lib/auth');
+        const session = await getSession();
+
+        if (!session) {
+            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+        }
+
+        const connection = await pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 1. Get current task state to compare
+            const [currentRows]: any = await connection.execute('SELECT * FROM tasks WHERE id = ?', [taskId]);
+            if (currentRows.length === 0) {
+                await connection.rollback();
+                return NextResponse.json({ success: false, message: 'Task not found' }, { status: 404 });
+            }
+            const currentTask = currentRows[0];
+
+            // 2. Prepare updates
+            const fieldsToUpdate: string[] = [];
+            const values: any[] = [];
+            const historyEntries: { type: string, field: string, oldVal: string, newVal: string }[] = [];
+
+            // Helper to check change and add to history
+            const checkChange = (field: string, newValue: any, type: string = 'field_change') => {
+                if (newValue !== undefined && currentTask[field] != newValue) {
+                    fieldsToUpdate.push(`${field} = ?`);
+                    values.push(newValue);
+
+                    let oldValStr = String(currentTask[field] || '');
+                    let newValStr = String(newValue || '');
+
+                    // Special handling for assignee history (resolve ID to Name if possible, for now storing ID or Name handling needs care)
+                    // We will handle specific resolving below if needed.
+                    historyEntries.push({ type, field, oldVal: oldValStr, newVal: newValStr });
+                }
+            };
+
+            // Define fields we allow updating
+            if (body.title !== undefined) checkChange('title', body.title);
+            if (body.description !== undefined) checkChange('description', body.description);
+            if (body.status !== undefined) checkChange('status', body.status, 'status_change');
+            if (body.priority !== undefined) checkChange('priority', body.priority, 'priority_change');
+            if (body.due_date !== undefined) {
+                // Format date for comparison/storage if needed, or rely on client sending correct format
+                const dateVal = body.due_date ? new Date(body.due_date).toISOString().slice(0, 19).replace('T', ' ') : null;
+                if (currentTask.due_date != dateVal) { // strict equality might fail on Date objects vs strings
+                    fieldsToUpdate.push('due_date = ?');
+                    values.push(dateVal);
+                    historyEntries.push({
+                        type: 'field_change',
+                        field: 'due_date',
+                        oldVal: String(currentTask.due_date || ''),
+                        newVal: String(dateVal || '')
+                    });
+                }
+            }
+
+            // Assignee change - Special handling to store Name in history
+            if (body.assigned_to !== undefined) {
+                const newAssigneeId = body.assigned_to ? parseInt(body.assigned_to) : null;
+                if (currentTask.assigned_to != newAssigneeId) {
+                    fieldsToUpdate.push('assigned_to = ?');
+                    values.push(newAssigneeId);
+
+                    // Resolve name for history
+                    let newAssigneeName = 'Unassigned';
+                    if (newAssigneeId) {
+                        const [adminRows]: any = await connection.execute('SELECT name FROM admins WHERE id = ?', [newAssigneeId]);
+                        if (adminRows.length > 0) newAssigneeName = adminRows[0].name;
+                    }
+
+                    historyEntries.push({
+                        type: 'assigned',
+                        field: 'assigned_to',
+                        oldVal: String(currentTask.assigned_to || ''),
+                        newVal: newAssigneeName
+                    });
+                }
+            }
+
+            // Customer ID change
+            if (body.customer_id !== undefined) {
+                const newCustId = body.customer_id ? parseInt(body.customer_id) : null;
+                checkChange('customer_id', newCustId);
+            }
+
+
+            if (fieldsToUpdate.length > 0) {
+                // Execute Update
+                const sql = `UPDATE tasks SET ${fieldsToUpdate.join(', ')} WHERE id = ?`;
+                await connection.execute(sql, [...values, taskId]);
+
+                // Insert History
+                for (const entry of historyEntries) {
+                    await connection.execute(
+                        `INSERT INTO task_history (task_id, changed_by, change_type, field_name, old_value, new_value) VALUES (?, ?, ?, ?, ?, ?)`,
+                        [taskId, session.id, entry.type, entry.field, entry.oldVal, entry.newVal]
+                    );
+                }
+
+                // Keep track of status changer
+                if (body.status && body.status !== currentTask.status) {
+                    await connection.execute('UPDATE tasks SET status_changed_by = ? WHERE id = ?', [session.id, taskId]);
+                }
+            }
+
+            await connection.commit();
+            return NextResponse.json({ success: true });
+
+        } catch (err) {
+            await connection.rollback();
+            throw err;
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error("Update Task Error:", error);
+        return NextResponse.json({ success: false, message: 'Failed to update task' }, { status: 500 });
+    }
+}
+
 // DELETE: Soft delete task
 export async function DELETE(
     request: Request,

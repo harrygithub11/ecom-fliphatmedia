@@ -17,6 +17,7 @@ CREATE INDEX idx_tasks_customer ON tasks(customer_id);
 
 -- 1.2 Soft delete support (ignore error if column exists)
 ALTER TABLE tasks ADD COLUMN deleted_at DATETIME NULL;
+ALTER TABLE tasks ADD COLUMN status_changed_by INT NULL;
 
 -- ============================================
 -- PART 2: Multiple Assignees Support
