@@ -25,7 +25,7 @@ import {
     SheetFooter,
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface Task {
     id: number;
@@ -176,7 +176,7 @@ export default function TaskDrawer({
             const data = await res.json();
 
             if (data.success) {
-                toast.success("Task updated successfully");
+                toast({ description: "Task updated successfully", className: "bg-green-500 text-white" });
                 setOriginalTask(JSON.parse(JSON.stringify(activeTask)));
                 setIsDirty(false);
                 onUpdate(activeTask.id, activeTask); // Notify parent list
@@ -184,11 +184,11 @@ export default function TaskDrawer({
                 // Refresh history to show the update action
                 fetchHistory(activeTask.id);
             } else {
-                toast.error("Failed to save changes");
+                toast({ description: "Failed to save changes", variant: "destructive" });
             }
         } catch (e) {
             console.error(e);
-            toast.error("An error occurred while saving");
+            toast({ description: "An error occurred while saving", variant: "destructive" });
         } finally {
             setSaving(false);
         }
@@ -221,12 +221,12 @@ export default function TaskDrawer({
                 // Fetch real comments to sync IDs/Authors
                 fetchComments(activeTask.id);
             } else {
-                toast.error("Failed to post comment");
+                toast({ description: "Failed to post comment", variant: "destructive" });
                 setComments(prev => prev.filter(c => c.id !== tempId)); // Revert
             }
         } catch (e) {
             console.error(e);
-            toast.error("Failed to send comment");
+            toast({ description: "Failed to send comment", variant: "destructive" });
             setComments(prev => prev.filter(c => c.id !== tempId));
         }
     };
