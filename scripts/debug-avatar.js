@@ -1,7 +1,10 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: '.env.local' });
+
+// Try .env first (production), fallback to .env.local (local dev)
+const envPath = fs.existsSync('.env') ? '.env' : '.env.local';
+require('dotenv').config({ path: envPath });
 
 async function diagnose() {
     console.log('\n🔍 AVATAR SYSTEM DIAGNOSTIC\n');
