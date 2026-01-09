@@ -29,9 +29,15 @@ export function EmailsTab() {
             const data = await res.json();
             if (data.success) {
                 setEmails(data.emails);
+            } else {
+                console.error('Server returned error:', data);
+                // toast({ title: 'Error loading emails', description: data.message, variant: 'destructive' });
+                // Temporary: Alert the error to see it immediately
+                alert('Server Error: ' + data.message);
             }
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error('Fetch error:', error);
+            alert('Network Error: ' + error.message);
         } finally {
             setLoading(false);
         }

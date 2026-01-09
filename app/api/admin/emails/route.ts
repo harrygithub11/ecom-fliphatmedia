@@ -68,7 +68,11 @@ export async function GET(request: Request) {
         });
 
     } catch (error: any) {
-        console.error('Fetch Emails Error:', error);
-        return NextResponse.json({ success: false, message: 'Failed to fetch emails: ' + error.message }, { status: 500 });
+        console.error('Fetch Emails Error - Full Stack:', error);
+        return NextResponse.json({
+            success: false,
+            message: 'Server Error: ' + error.message,
+            stack: error.stack
+        }, { status: 500 });
     }
 }
