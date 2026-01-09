@@ -3,6 +3,10 @@ import pool from '@/lib/db';
 import { sendFacebookEvent } from '@/lib/facebook';
 import { headers } from 'next/headers';
 
+// Duplicate removed
+
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const connection = await pool.getConnection();

@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import pool from '@/lib/db';
 import { DynamicPageContent } from '@/components/landing/DynamicPageContent';
 
+export const dynamic = 'force-dynamic';
+
 // Helper to fetch page data
 async function getPageData(slug: string) {
     const connection = await pool.getConnection();

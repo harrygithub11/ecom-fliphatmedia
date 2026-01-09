@@ -1,4 +1,3 @@
-
 import { notFound } from "next/navigation";
 import pool from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, Download, Globe } from "lucide-react";
+
+export const dynamic = 'force-dynamic';
 
 async function getProposalData(id: string) {
     const connection = await pool.getConnection();

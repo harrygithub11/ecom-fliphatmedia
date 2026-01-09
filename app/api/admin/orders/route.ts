@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
+// Duplicate removed
+
 export async function GET(request: Request) {
     try {
         const connection = await pool.getConnection();

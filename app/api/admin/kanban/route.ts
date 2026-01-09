@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { logInteraction } from '@/lib/crm';
 
+// Duplicate removed
+
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const connection = await pool.getConnection();

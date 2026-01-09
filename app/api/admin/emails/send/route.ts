@@ -4,12 +4,19 @@ import pool from '@/lib/db';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 
-// Reuse Redis connection if possible, or create new for Queue
-const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
-    maxRetriesPerRequest: null
-});
+// Lazy initialization for Redis/Queue to prevent build-time connection attempts
+let emailQueue: Queue | null = null;
 
-const emailQueue = new Queue('email-send-queue', { connection });
+const getEmailQueue = () => {
+    if (!emailQueue) {
+        const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+            maxRetriesPerRequest: null,
+            lazyConnect: true // Don't connect immediately
+        });
+        emailQueue = new Queue('email-send-queue', { connection: connection as any });
+    }
+    return emailQueue;
+};
 
 export async function POST(request: Request) {
     try {
@@ -56,7 +63,7 @@ export async function POST(request: Request) {
         const emailId = result.insertId;
 
         // 2. Add to BullMQ Queue
-        await emailQueue.add('send-email', {
+        await getEmailQueue().add('send-email', {
             emailId,
             smtpAccountId: smtp_account_id
         }, {

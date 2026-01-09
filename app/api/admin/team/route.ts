@@ -3,6 +3,8 @@ import pool from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
+export const dynamic = 'force-dynamic';
+
 // GET all admins (for assignment dropdowns and team management)
 export async function GET() {
     try {

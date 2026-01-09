@@ -1,5 +1,7 @@
 import pool from '@/lib/db';
 import PageEditor from '../components/PageEditor';
+
+export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 
 export default async function EditPage({ params }: { params: Promise<{ id: string }> }) {
