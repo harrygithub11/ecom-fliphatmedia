@@ -8,12 +8,17 @@ export async function GET(
 ) {
     try {
         const taskId = params.id;
+        const { getSession } = await import('@/lib/auth');
+        const session = await getSession();
+        const currentUserId = session?.id || 0;
+
         const connection = await pool.getConnection();
 
         try {
             // Main task
             const [taskRows]: any = await connection.execute(`
                 SELECT t.*, 
+                       tr.last_seen_at,
                        c.name AS customer_name, c.email AS customer_email,
                        a.name AS created_by_name,
                        asg.name AS assigned_name,
@@ -23,8 +28,9 @@ export async function GET(
                 LEFT JOIN admins a ON t.created_by = a.id
                 LEFT JOIN admins asg ON t.assigned_to = asg.id
                 LEFT JOIN admins sc ON t.status_changed_by = sc.id
+                LEFT JOIN task_reads tr ON t.id = tr.task_id AND tr.user_id = ?
                 WHERE t.id = ? AND t.deleted_at IS NULL
-            `, [taskId]);
+            `, [currentUserId, taskId]);
 
             if (taskRows.length === 0) {
                 return NextResponse.json({ success: false, message: 'Task not found' }, { status: 404 });
@@ -166,6 +172,14 @@ export async function PUT(
                         oldVal: String(currentTask.assigned_to || ''),
                         newVal: newAssigneeName
                     });
+
+                    // Notification
+                    if (newAssigneeId && newAssigneeId !== session.id) {
+                        const { createNotification } = await import('@/lib/notifications');
+                        // We can't await inside this loop if we want formatted history? 
+                        // Actually better to do it here
+                        await createNotification(newAssigneeId, 'task_assigned', parseInt(taskId), session.id);
+                    }
                 }
             }
 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Users, ShoppingCart, ListTodo, Settings, LogOut, UserCog, FileText, Briefcase, Sparkles, TrendingUp, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import NotificationBell from '@/components/admin/NotificationBell';
 import { useState, useEffect } from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -214,6 +215,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     {/* Right: Quick Stats */}
                     <div className="flex items-center gap-6">
+                        <NotificationBell />
                         <div className="text-center">
                             <p className="text-xs text-muted-foreground uppercase tracking-wide">Leads Today</p>
                             <p className="text-xl font-bold text-primary flex items-center justify-center gap-1">

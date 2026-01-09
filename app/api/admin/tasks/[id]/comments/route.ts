@@ -63,6 +63,22 @@ export async function POST(
                 [taskId, session.id, 'comment_added', commentBody.substring(0, 100)]
             );
 
+            // Notify relevant users
+            const { createNotification } = await import('@/lib/notifications');
+            // Get task creator and assignee
+            const [taskRows]: any = await connection.execute('SELECT created_by, assigned_to FROM tasks WHERE id = ?', [taskId]);
+            if (taskRows.length > 0) {
+                const task = taskRows[0];
+                // Notify assignee if it's not the comment author
+                if (task.assigned_to && task.assigned_to !== session.id) {
+                    await createNotification(task.assigned_to, 'comment_added', parseInt(taskId), session.id);
+                }
+                // Notify creator if it's not the comment author and not the assignee (to avoid double notify)
+                if (task.created_by && task.created_by !== session.id && task.created_by !== task.assigned_to) {
+                    await createNotification(task.created_by, 'comment_added', parseInt(taskId), session.id);
+                }
+            }
+
             // Log admin activity
             const { logAdminActivity } = await import('@/lib/activity-logger');
             await logAdminActivity(

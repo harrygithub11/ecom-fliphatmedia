@@ -40,6 +40,7 @@ interface Task {
     customer_name?: string;
     created_at: string;
     created_by_name?: string;
+    last_seen_at?: string;
 }
 
 interface Comment {
@@ -487,17 +488,35 @@ export default function TaskDrawer({
                                                 <p className="text-sm text-zinc-400">No comments yet</p>
                                             </div>
                                         ) : (
-                                            comments.map(comment => (
-                                                <div key={comment.id} className="group relative">
-                                                    <div className="flex items-baseline justify-between mb-1">
-                                                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{comment.author_name}</span>
-                                                        <span className="text-[10px] text-zinc-400">{formatDate(comment.created_at)}</span>
+                                            comments.map((comment: any, index: number) => {
+                                                const isNew = activeTask.last_seen_at && new Date(comment.created_at) > new Date(activeTask.last_seen_at);
+                                                const prevComment = index > 0 ? comments[index - 1] : null;
+                                                const prevIsNew = prevComment && activeTask.last_seen_at && new Date(prevComment.created_at) > new Date(activeTask.last_seen_at);
+                                                const showDivider = isNew && !prevIsNew;
+
+                                                return (
+                                                    <div key={comment.id}>
+                                                        {showDivider && (
+                                                            <div className="relative py-4 flex items-center">
+                                                                <div className="flex-grow border-t border-red-200 dark:border-red-900/50"></div>
+                                                                <span className="flex-shrink-0 mx-4 text-xs font-medium text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">
+                                                                    New since last visit
+                                                                </span>
+                                                                <div className="flex-grow border-t border-red-200 dark:border-red-900/50"></div>
+                                                            </div>
+                                                        )}
+                                                        <div className={`group relative ${isNew ? 'bg-blue-50/30 dark:bg-blue-900/5 -mx-4 px-4 py-2 rounded-lg' : ''}`}>
+                                                            <div className="flex items-baseline justify-between mb-1">
+                                                                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{comment.author_name}</span>
+                                                                <span className="text-[10px] text-zinc-400">{formatDate(comment.created_at)}</span>
+                                                            </div>
+                                                            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg rounded-tl-none">
+                                                                {comment.body}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg rounded-tl-none">
-                                                        {comment.body}
-                                                    </p>
-                                                </div>
-                                            ))
+                                                );
+                                            })
                                         )}
                                     </div>
                                 </TabsContent>
