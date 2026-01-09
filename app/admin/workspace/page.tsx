@@ -838,6 +838,7 @@ export default function WorkspacePage() {
                 isOpen={drawerOpen}
                 onClose={() => { setDrawerOpen(false); setSelectedTask(null); }}
                 team={team}
+                customers={leads}
                 onUpdate={(taskId, updates) => updateTask(taskId, updates as Partial<Task>)}
                 onAddComment={handleAddComment}
             />

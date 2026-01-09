@@ -18,7 +18,7 @@ export async function GET() {
         try {
             const [logs]: any = await connection.execute(
                 `SELECT id, ip_address, user_agent, login_time, success 
-                 FROM admin_login_logs 
+                 FROM admin_login_history 
                  WHERE admin_id = ? 
                  ORDER BY login_time DESC 
                  LIMIT 50`,

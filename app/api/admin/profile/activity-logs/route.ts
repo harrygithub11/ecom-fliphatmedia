@@ -18,7 +18,7 @@ export async function GET() {
         try {
             const [logs]: any = await connection.execute(
                 `SELECT id, action_type, action_description, entity_type, entity_id, created_at 
-                 FROM admin_activity_logs 
+                 FROM admin_activity_log 
                  WHERE admin_id = ? 
                  ORDER BY created_at DESC 
                  LIMIT 100`,

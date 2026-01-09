@@ -53,13 +53,17 @@ export async function POST(request: Request) {
             );
 
             // Log Admin Activity
-            const { logAdminActivity } = await import('@/lib/activity-logger');
-            await logAdminActivity(
-                session.id,
-                'security_update',
-                'Changed own password',
-                'admin',
-                session.id
+            // Revoke all sessions (Optional but safer)
+            await connection.execute(
+                'DELETE FROM admin_sessions WHERE admin_id = ?',
+                [session.id]
+            );
+
+            // Log Admin Activity
+            await connection.execute(
+                `INSERT INTO admin_activity_log (admin_id, action_type, action_description, ip_address) 
+                 VALUES (?, 'change_password', 'Changed password and revoked sessions', ?)`,
+                [session.id, request.headers.get('x-forwarded-for') || 'unknown']
             );
 
             return NextResponse.json({

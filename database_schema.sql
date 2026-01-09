@@ -5,8 +5,12 @@ CREATE TABLE IF NOT EXISTS admins (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
     email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL, -- In real app, use bcrypt. For demo: plain or simple hash
+    password_hash VARCHAR(255) NOT NULL,
     role ENUM('super_admin', 'support') DEFAULT 'super_admin',
+    phone VARCHAR(20) NULL,
+    avatar_url VARCHAR(500) NULL,
+    timezone VARCHAR(50) DEFAULT 'UTC',
+    language VARCHAR(10) DEFAULT 'en',
     last_login TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -107,4 +111,54 @@ CREATE TABLE IF NOT EXISTS files (
     file_type VARCHAR(50) DEFAULT 'link',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+);
+
+-- 8. ADMIN SESSIONS (Security)
+CREATE TABLE IF NOT EXISTS admin_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(255),
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+);
+
+-- 9. ADMIN LOGIN HISTORY (Audit)
+CREATE TABLE IF NOT EXISTS admin_login_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT,
+    email_attempted VARCHAR(255),
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(255),
+    location VARCHAR(100),
+    success BOOLEAN DEFAULT FALSE,
+    failure_reason VARCHAR(255),
+    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. ADMIN ACTIVITY LOG (Audit)
+CREATE TABLE IF NOT EXISTS admin_activity_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    action_description TEXT,
+    entity_type VARCHAR(50),
+    entity_id INT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+);
+
+-- 11. ADMIN PREFERENCES (Settings)
+CREATE TABLE IF NOT EXISTS admin_preferences (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL UNIQUE,
+    theme ENUM('light', 'dark', 'system') DEFAULT 'system',
+    notify_email BOOLEAN DEFAULT TRUE,
+    notify_in_app BOOLEAN DEFAULT TRUE,
+    default_view VARCHAR(50) DEFAULT 'dashboard',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
 );

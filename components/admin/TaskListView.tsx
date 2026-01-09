@@ -358,9 +358,34 @@ function StatusGroup({
                     */}
 
                     {quickAddOpen && (
-                        <div className="flex items-center gap-2 px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-                            {/* ... input ... */}
-                            {/* (This part is fine, but the trigger changed) */}
+                        <div className="flex items-center gap-2 px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 animate-in slide-in-from-top-1 duration-200">
+                            <div className="w-4" /> {/* Grip placeholder */}
+                            <Checkbox disabled className="opacity-50" />
+                            <StatusIcon className={`w-5 h-5 ${config.color} opacity-50`} />
+
+                            <Input
+                                autoFocus
+                                value={quickAddTitle}
+                                onChange={(e) => setQuickAddTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleQuickAdd();
+                                    if (e.key === 'Escape') {
+                                        setQuickAddOpen(false);
+                                        setQuickAddTitle('');
+                                    }
+                                }}
+                                onBlur={() => {
+                                    if (quickAddTitle.trim()) handleQuickAdd();
+                                    else setQuickAddOpen(false);
+                                }}
+                                placeholder={`+ Type name for new ${config.label.toLowerCase()} task...`}
+                                className="flex-1 h-8 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-1 focus:ring-primary/20"
+                            />
+
+                            <div className="flex items-center gap-2">
+                                <Button size="sm" onClick={handleQuickAdd} className="h-7 text-xs">Add</Button>
+                                <Button size="sm" variant="ghost" onClick={() => setQuickAddOpen(false)} className="h-7 text-xs">Cancel</Button>
+                            </div>
                         </div>
                     )}
 

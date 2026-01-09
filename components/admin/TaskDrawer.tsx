@@ -60,9 +60,17 @@ interface HistoryItem {
     created_at: string;
 }
 
+
+
 interface TeamMember {
     id: number;
     name: string;
+}
+
+interface Customer {
+    id: number;
+    name: string;
+    email: string;
 }
 
 interface TaskDrawerProps {
@@ -70,6 +78,7 @@ interface TaskDrawerProps {
     isOpen: boolean;
     onClose: () => void;
     team: TeamMember[];
+    customers: Customer[];
     onUpdate: (taskId: number, updates: Partial<Task>) => void; // Used to update parent list state
     onAddComment: (taskId: number, body: string) => void;
 }
@@ -91,6 +100,7 @@ export default function TaskDrawer({
     isOpen,
     onClose,
     team,
+    customers,
     onUpdate,
 }: TaskDrawerProps) {
     const { toast } = useToast();
@@ -147,6 +157,7 @@ export default function TaskDrawer({
             activeTask.status !== originalTask.status ||
             activeTask.priority !== originalTask.priority ||
             activeTask.assigned_to !== originalTask.assigned_to ||
+            activeTask.customer_id !== originalTask.customer_id ||
             activeTask.due_date !== originalTask.due_date; // Note: Date string format matching is crucial here
 
         setIsDirty(isChanged);
@@ -170,6 +181,7 @@ export default function TaskDrawer({
                     status: activeTask.status,
                     priority: activeTask.priority,
                     assigned_to: activeTask.assigned_to,
+                    customer_id: activeTask.customer_id,
                     due_date: activeTask.due_date
                 }),
             });

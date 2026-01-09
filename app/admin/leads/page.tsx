@@ -26,7 +26,7 @@ interface Customer {
     phone: string;
     source: string;
     score: 'hot' | 'warm' | 'cold';
-    stage: 'new' | 'contacted' | 'won' | 'lost';
+    stage: 'new' | 'contacted' | 'won' | 'lost' | 'follow_up_required' | 'follow_up_done' | 'qualified' | 'proposal_sent' | 'negotiation';
     owner: string;
     created_at: string;
     order_status?: string;
@@ -141,9 +141,12 @@ export default function LeadsPage() {
     const getStageBadge = (stage: string) => {
         switch (stage) {
             case 'new': return <Badge variant="secondary">New Lead</Badge>;
+            case 'follow_up_required': return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Follow Up Req.</Badge>;
+            case 'follow_up_done': return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Follow Up Done</Badge>;
+            case 'qualified': return <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200">Qualified</Badge>;
             case 'won': return <Badge className="bg-green-100 text-green-700 border-green-200">Won 💰</Badge>;
             case 'lost': return <Badge variant="outline">Lost</Badge>;
-            default: return <Badge variant="secondary">{stage}</Badge>;
+            default: return <Badge variant="secondary">{stage ? stage.replace('_', ' ') : 'Unknown'}</Badge>;
         }
     };
 
@@ -341,6 +344,9 @@ export default function LeadsPage() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="new"><Badge variant="secondary" className="pointer-events-none">New Lead</Badge></SelectItem>
+                                                    <SelectItem value="follow_up_required"><Badge className="bg-amber-100 text-amber-700 border-amber-200 pointer-events-none">Follow Up Req.</Badge></SelectItem>
+                                                    <SelectItem value="follow_up_done"><Badge className="bg-blue-100 text-blue-700 border-blue-200 pointer-events-none">Follow Up Done</Badge></SelectItem>
+                                                    <SelectItem value="qualified"><Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200 pointer-events-none">Qualified</Badge></SelectItem>
                                                     <SelectItem value="contacted"><Badge variant="outline" className="text-blue-600 bg-blue-50 border-blue-200 pointer-events-none">Contacted</Badge></SelectItem>
                                                     <SelectItem value="proposal_sent"><Badge variant="outline" className="text-purple-600 bg-purple-50 border-purple-200 pointer-events-none">Proposed</Badge></SelectItem>
                                                     <SelectItem value="negotiation"><Badge variant="outline" className="text-orange-600 bg-orange-50 border-orange-200 pointer-events-none">Negotiating</Badge></SelectItem>
