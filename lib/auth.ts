@@ -21,8 +21,8 @@ export async function createSession(admin: AdminSession) {
 
     cookies().set('admin_session', token, {
         httpOnly: true,
-        secure: false, // Allow in development (http)
-        sameSite: 'strict', // Changed from 'lax' to 'strict' for same-origin only
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
         maxAge: 60 * 60 * 24, // 24 hours
         path: '/',
     });
@@ -35,13 +35,16 @@ export async function getSession(): Promise<AdminSession | null> {
     const token = cookies().get('admin_session')?.value;
 
     if (!token) {
+        console.log('🔍 getSession: No token found in cookies');
         return null;
     }
 
     try {
         const { payload } = await jwtVerify(token, SECRET_KEY);
+        // console.log('🔍 getSession: Valid token for', (payload.admin as AdminSession).email);
         return payload.admin as AdminSession;
     } catch (error) {
+        console.error('🔍 getSession: Invalid token:', error);
         return null;
     }
 }
