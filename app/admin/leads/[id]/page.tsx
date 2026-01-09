@@ -126,6 +126,9 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
     const [proposalAmount, setProposalAmount] = useState("");
     const [proposalContent, setProposalContent] = useState("");
 
+    // Dynamic stages
+    const [stages, setStages] = useState<{ id: number, value: string, label: string, color: string }[]>([]);
+
     useEffect(() => {
         async function fetchProfile() {
             try {
@@ -140,7 +143,19 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                 setLoading(false);
             }
         }
+
+        async function fetchStages() {
+            try {
+                const res = await fetch('/api/admin/stages');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.stages)) setStages(data.stages);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
         fetchProfile();
+        fetchStages();
     }, [params.id]);
 
     if (loading) return <div className="p-10 text-center">Loading 360 View...</div>;
@@ -442,12 +457,11 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                                     </div>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="new">New Lead</SelectItem>
-                                    <SelectItem value="contacted">Contacted</SelectItem>
-                                    <SelectItem value="proposal_sent">Proposal Sent</SelectItem>
-                                    <SelectItem value="negotiation">Negotiation</SelectItem>
-                                    <SelectItem value="won">Won Deal 💰</SelectItem>
-                                    <SelectItem value="lost">Lost</SelectItem>
+                                    {stages.map(stage => (
+                                        <SelectItem key={stage.id} value={stage.value}>
+                                            {stage.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </CardDescription>
