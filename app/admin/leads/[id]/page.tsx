@@ -809,22 +809,11 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                                         )}
 
                                         <div className="flex-1 pb-6">
-                                            <p className="text-sm">
-                                                <span className="font-semibold">{item.created_by_name || 'System'}:</span>
-                                                <span className="ml-1 text-zinc-700 dark:text-zinc-300">
-                                                    {formatTimelineMessage(item.content, item.type)}
-                                                </span>
-                                            </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {new Date(item.created_at).toLocaleString()}
-                                            </p>
-                                        </div>
-                                        <div className="flex-1 pb-1">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-semibold">{item.created_by_name || 'System'}</span>
-                                                <span className="text-[10px] text-muted-foreground">{new Date(item.created_at).toLocaleTimeString()}</span>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="font-semibold text-sm">{item.created_by_name || 'System'}</span>
+                                                <span className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString()}</span>
                                             </div>
-                                            <div className="text-xs bg-white dark:bg-zinc-900 border p-3 rounded-lg mt-1 shadow-sm">
+                                            <div className="text-sm text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border p-3 rounded-lg shadow-sm">
                                                 {formatTimelineMessage(item.content, item.type)}
                                             </div>
                                         </div>
@@ -899,6 +888,12 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                     </Tabs >
                 </Card >
             </div >
+            <ComposeModal
+                open={composeOpen}
+                onOpenChange={setComposeOpen}
+                initialTo={lead?.email || ''}
+                customerId={lead?.id}
+            />
         </div >
     );
 }

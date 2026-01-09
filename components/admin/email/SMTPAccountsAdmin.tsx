@@ -39,6 +39,24 @@ export function SMTPAccountsAdmin() {
         from_name: ''
     });
 
+    const handleProviderChange = (value: string) => {
+        let newData = { ...formData, provider: value };
+        if (value === 'gmail') {
+            newData.host = 'smtp.gmail.com';
+            newData.port = '587';
+            if (!newData.name) newData.name = 'Gmail Support';
+        } else if (value === 'outlook') {
+            newData.host = 'smtp.office365.com';
+            newData.port = '587';
+            if (!newData.name) newData.name = 'Outlook Mail';
+        } else if (value === 'sendgrid') {
+            newData.host = 'smtp.sendgrid.net';
+            newData.port = '587';
+            if (!newData.name) newData.name = 'SendGrid';
+        }
+        setFormData(newData);
+    };
+
     useEffect(() => {
         fetchAccounts();
     }, []);
@@ -120,7 +138,7 @@ export function SMTPAccountsAdmin() {
                                     <Label>Provider</Label>
                                     <Select
                                         value={formData.provider}
-                                        onValueChange={val => setFormData({ ...formData, provider: val })}
+                                        onValueChange={handleProviderChange}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />

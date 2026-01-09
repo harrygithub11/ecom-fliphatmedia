@@ -49,9 +49,14 @@ export async function POST(request: Request) {
                 });
                 await transporter.verify();
             } catch (smtpError: any) {
+
+                let msg = 'SMTP Connection Failed: ' + smtpError.message;
+                if (host.includes('gmail') && smtpError.message.includes('Username and Password not accepted')) {
+                    msg += ' (Hint: For Gmail, use an "App Password", not your main password. Enable 2FA -> App Passwords)';
+                }
                 return NextResponse.json({
                     success: false,
-                    message: 'SMTP Connection Failed: ' + smtpError.message
+                    message: msg
                 }, { status: 400 });
             }
         }
