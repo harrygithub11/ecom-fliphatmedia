@@ -40,6 +40,8 @@ interface Task {
     customer_email?: string;
     created_at: string;
     comments_count?: number;
+    is_unread?: number;
+    unread_comments_count?: number;
 }
 
 interface TeamMember {
@@ -155,9 +157,14 @@ function TaskRow({
                 className="flex-1 min-w-0 cursor-pointer"
                 onClick={onTaskClick}
             >
-                <span className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-zinc-500' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                    {task.title}
-                </span>
+                <div className="flex items-center gap-2">
+                    {task.is_unread ? (
+                        <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 animate-pulse" title="Unread activity" />
+                    ) : null}
+                    <span className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-zinc-500' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                        {task.title}
+                    </span>
+                </div>
                 {task.customer_name && (
                     <Link
                         href={`/admin/leads/${task.customer_id}`}
@@ -233,9 +240,15 @@ function TaskRow({
             </Select>
 
             {/* Comments */}
-            <div className="w-12 text-xs text-zinc-500 flex items-center gap-1">
+            <div className={`w-12 text-xs flex items-center gap-1 ${task.unread_comments_count ? 'text-blue-600 font-bold' : 'text-zinc-500'}`}>
                 <MessageSquare className="w-3 h-3" />
-                {task.comments_count || 0}
+                {task.unread_comments_count ? (
+                    <Badge className="h-4 px-1 text-[10px] bg-blue-500 hover:bg-blue-600 border-none text-white leading-none min-w-[16px] justify-center">
+                        {task.unread_comments_count}
+                    </Badge>
+                ) : (
+                    task.comments_count || 0
+                )}
             </div>
 
             {/* Row Actions */}

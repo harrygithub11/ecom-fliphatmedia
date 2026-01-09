@@ -129,6 +129,9 @@ export default function TaskDrawer({
             setIsDirty(false);
             setNewComment('');
 
+            // Mark as read immediately
+            fetch(`/api/admin/tasks/${task.id}/read`, { method: 'POST' }).catch(console.error);
+
             fetch(`/api/admin/tasks/${task.id}`)
                 .then(res => res.json())
                 .then(data => {

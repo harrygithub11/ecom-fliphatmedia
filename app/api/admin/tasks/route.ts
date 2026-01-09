@@ -18,19 +18,35 @@ export async function GET(request: Request) {
         const perPage = parseInt(searchParams.get('per_page') || '50');
         const offset = (page - 1) * perPage;
 
+        const { getSession } = await import('@/lib/auth');
+        const session = await getSession();
+        const currentUserId = session?.id || 0;
+
         let query = `
             SELECT t.*, c.name AS customer_name, c.email AS customer_email, 
                    a.name AS created_by_name,
                    asg.name AS assigned_name,
-                   sc.name AS status_changed_by_name
+                   sc.name AS status_changed_by_name,
+                   tr.last_seen_at,
+                   (
+                       CASE 
+                           WHEN tr.last_seen_at IS NULL THEN 1
+                           WHEN t.updated_at > tr.last_seen_at THEN 1
+                           WHEN (SELECT MAX(created_at) FROM task_comments WHERE task_id = t.id) > tr.last_seen_at THEN 1
+                           ELSE 0
+                       END
+                   ) as is_unread,
+                   (SELECT COUNT(*) FROM task_comments WHERE task_id = t.id) as comments_count,
+                   (SELECT COUNT(*) FROM task_comments WHERE task_id = t.id AND created_at > IFNULL(tr.last_seen_at, '1970-01-01')) as unread_comments_count
             FROM tasks t
             LEFT JOIN customers c ON t.customer_id = c.id
             LEFT JOIN admins a ON t.created_by = a.id
             LEFT JOIN admins asg ON t.assigned_to = asg.id
             LEFT JOIN admins sc ON t.status_changed_by = sc.id
+            LEFT JOIN task_reads tr ON t.id = tr.task_id AND tr.user_id = ?
             WHERE t.deleted_at IS NULL
         `;
-        const params: any[] = [];
+        const params: any[] = [currentUserId];
 
         if (status && status !== 'all') {
             query += ` AND t.status = ? `;
