@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Mail, Phone, MoreHorizontal, Plus, Upload } from 'lucide-react';
+import { Search, Mail, Phone, MoreHorizontal, Plus, Upload, Trash2 } from 'lucide-react';
 import { CSVImportModal } from '@/components/admin/CSVImportModal';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
 import {
     Table,
     TableBody,
@@ -47,6 +49,7 @@ export default function LeadsPage() {
     const [newLeadSource, setNewLeadSource] = useState('manual');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [csvImportOpen, setCsvImportOpen] = useState(false);
+    const [deleteLeadId, setDeleteLeadId] = useState<number | null>(null);
 
     // Team members for assignment
     const [admins, setAdmins] = useState<{ id: number, name: string, email: string }[]>([]);
@@ -484,6 +487,13 @@ export default function LeadsPage() {
                                                     <DropdownMenuItem asChild>
                                                         <a href={`https://wa.me/${lead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="cursor-pointer">Send WhatsApp</a>
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => setDeleteLeadId(lead.id)}
+                                                        className="text-red-600 focus:text-red-600 cursor-pointer"
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete Lead
+                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
@@ -494,6 +504,27 @@ export default function LeadsPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteLeadId !== null} onOpenChange={() => setDeleteLeadId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Lead?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this lead? This action cannot be undone and will remove all associated data including interactions, tasks, and files.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => deleteLeadId && deleteLead(deleteLeadId)}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

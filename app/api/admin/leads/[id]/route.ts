@@ -140,3 +140,50 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json({ success: false, message: 'Update failed' }, { status: 500 });
     }
 }
+
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+    try {
+        const id = params.id;
+        const connection = await pool.getConnection();
+
+        try {
+            // Get session for logging
+            const { getSession } = await import('@/lib/auth');
+            const session = await getSession();
+
+            if (!session) {
+                return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
+            }
+
+            // Fetch customer name before deletion for logging
+            const [rows]: any = await connection.execute('SELECT name FROM customers WHERE id = ?', [id]);
+            const customerName = rows[0]?.name || 'Unknown Lead';
+
+            // Delete customer (related records will be deleted automatically if CASCADE is set)
+            const [result]: any = await connection.execute('DELETE FROM customers WHERE id = ?', [id]);
+
+            if (result.affectedRows === 0) {
+                return NextResponse.json({ success: false, message: 'Lead not found' }, { status: 404 });
+            }
+
+            // Log activity
+            const { logAdminActivity } = await import('@/lib/activity-logger');
+            await logAdminActivity(
+                session.id,
+                'lead_delete',
+                `Deleted lead "${customerName}"`,
+                'customer',
+                parseInt(id)
+            );
+
+            return NextResponse.json({ success: true, message: 'Lead deleted successfully' });
+
+        } finally {
+            connection.release();
+        }
+
+    } catch (error) {
+        console.error("Delete Lead Error:", error);
+        return NextResponse.json({ success: false, message: 'Delete failed' }, { status: 500 });
+    }
+}
