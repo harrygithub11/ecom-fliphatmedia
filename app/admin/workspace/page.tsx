@@ -76,7 +76,8 @@ export default function WorkspacePage() {
 
     // Add Task Dialog
     const [addTaskOpen, setAddTaskOpen] = useState(false);
-    const [newTask, setNewTask] = useState({ title: '', description: '', due_date: '', due_time: '', priority: 'medium', customer_id: '', assigned_to: '' });
+    const [newTask, setNewTask] = useState({ title: '', description: '', due_date: '', due_time: '', priority: 'medium', customer_id: '', assigned_to: '', status: 'open' });
+    const [leads, setLeads] = useState<{ id: number; name: string; email: string }[]>([]);
 
     // Edit Task Dialog
     const [editTaskOpen, setEditTaskOpen] = useState(false);
@@ -110,9 +111,23 @@ export default function WorkspacePage() {
         } catch (e) { console.error(e); }
     };
 
+    const fetchLeads = async () => {
+        try {
+            const res = await fetch('/api/admin/leads');
+            const data = await res.json();
+            if (Array.isArray(data)) setLeads(data);
+            else if (data.leads && Array.isArray(data.leads)) setLeads(data.leads);
+        } catch (e) { console.error(e); }
+    };
+
     useEffect(() => {
-        Promise.all([fetchTasks(), fetchTimeline(), fetchTeam()]).finally(() => setLoading(false));
+        Promise.all([fetchTasks(), fetchTimeline(), fetchTeam(), fetchLeads()]).finally(() => setLoading(false));
     }, [statusFilter, priorityFilter, userFilter, activityUserFilter]);
+
+    const openCreateTaskDialog = (status?: string) => {
+        setNewTask(prev => ({ ...prev, status: status || 'open' }));
+        setAddTaskOpen(true);
+    };
 
     const toggleTaskStatus = async (taskId: number, currentStatus: string) => {
         const newStatus = currentStatus === 'done' ? 'open' : 'done';
@@ -145,52 +160,52 @@ export default function WorkspacePage() {
                     title: newTask.title,
                     description: newTask.description,
                     due_date: finalDate || null,
+                    status: newTask.status || 'open',
                     priority: newTask.priority,
                     customer_id: newTask.customer_id || null,
                     assigned_to: (newTask.assigned_to && newTask.assigned_to !== 'unassigned') ? newTask.assigned_to : null
                 })
             });
             setAddTaskOpen(false);
-            setNewTask({ title: '', description: '', due_date: '', due_time: '', priority: 'medium', customer_id: '', assigned_to: '' });
+            setNewTask({ title: '', description: '', due_date: '', due_time: '', priority: 'medium', customer_id: '', assigned_to: '', status: 'open' });
             fetchTasks();
         } catch (e) {
             console.error(e);
         }
     };
 
-    const handleUpdateTask = async (taskId: number, field: string, value: string | null) => {
-        const oldTasks = [...tasks];
+    const updateTask = async (taskId: number, updates: Partial<Task>) => {
+        // Prepare optimistic updates
+        const optimisticUpdates = { ...updates };
 
-        setTasks(prev => prev.map(t => {
-            if (t.id !== taskId) return t;
-
-            let updates: any = { [field]: value };
-
-            // Special handling for assignment to update the name immediately
-            if (field === 'assigned_to') {
-                if (!value || value === 'unassigned') {
-                    updates.assigned_to = null;
-                    updates.assigned_name = null;
-                } else {
-                    const member = team.find(m => String(m.id) === String(value));
-                    if (member) updates.assigned_name = member.name;
-                }
+        // Special handling for assignment to update the name immediately
+        if ('assigned_to' in updates) {
+            if (!updates.assigned_to || updates.assigned_to === 'unassigned' as any) {
+                optimisticUpdates.assigned_to = undefined;
+                optimisticUpdates.assigned_name = undefined;
+            } else {
+                const member = team.find(m => String(m.id) === String(updates.assigned_to));
+                if (member) optimisticUpdates.assigned_name = member.name;
             }
+        }
 
-            return { ...t, ...updates };
-        }));
+        // Apply optimistic update
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...optimisticUpdates } : t));
 
+        if (selectedTask?.id === taskId) {
+            setSelectedTask(prev => prev ? { ...prev, ...optimisticUpdates } : null);
+        }
+
+        // API Call
         try {
             await fetch('/api/admin/tasks', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: taskId,
-                    [field]: (field === 'assigned_to' && (value === 'unassigned' || !value)) ? null : value
-                })
+                body: JSON.stringify({ id: taskId, ...updates })
             });
         } catch (e) {
-            setTasks(oldTasks);
+            console.error('Failed to update task:', e);
+            fetchTasks(); // Revert/Refresh on error
         }
     };
 
@@ -262,24 +277,6 @@ export default function WorkspacePage() {
         );
     };
 
-    const handleTaskUpdate = async (taskId: number, updates: Partial<Task>) => {
-        // Optimistic update
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
-        if (selectedTask?.id === taskId) {
-            setSelectedTask(prev => prev ? { ...prev, ...updates } : null);
-        }
-
-        try {
-            await fetch('/api/admin/tasks', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: taskId, ...updates })
-            });
-        } catch (e) {
-            fetchTasks(); // Revert on error
-        }
-    };
-
     const handleAddComment = (taskId: number, body: string) => {
         // Just refresh - the drawer handles the actual API call
         fetchTasks();
@@ -326,19 +323,29 @@ export default function WorkspacePage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 pb-10">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* 
+                LAYER 1 - IDENTITY 
+                Context: "Where am I? What is the primary action?"
+            */}
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">Workspace</h1>
-                    <p className="text-muted-foreground mt-1">Manage your tasks and track team activity.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Workspace</h1>
+                    <p className="text-muted-foreground mt-1 text-base">Manage your tasks and track team activity.</p>
                 </div>
-                <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => { fetchTasks(); fetchTimeline(); }} className="gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { fetchTasks(); fetchTimeline(); }}
+                        className="h-10 px-4 gap-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all text-zinc-600 dark:text-zinc-400"
+                    >
                         <RefreshCw className="w-4 h-4" />
+                        <span className="hidden sm:inline">Refresh</span>
                     </Button>
+
                     <Dialog open={addTaskOpen} onOpenChange={setAddTaskOpen}>
                         <DialogTrigger asChild>
-                            <Button className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+                            <Button className="h-10 px-6 gap-2 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 shadow-lg shadow-zinc-500/10 hover:shadow-zinc-500/20 hover:scale-[1.02] transition-all font-medium">
                                 <Plus className="w-4 h-4" /> New Task
                             </Button>
                         </DialogTrigger>
@@ -374,108 +381,144 @@ export default function WorkspacePage() {
                                     </div>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label>Priority</Label>
-                                    <Select value={newTask.priority} onValueChange={v => setNewTask({ ...newTask, priority: v })}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent style={{ zIndex: 9999 }}>
-                                            <SelectItem value="high"><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>High</SelectItem>
-                                            <SelectItem value="medium"><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>Medium</SelectItem>
-                                            <SelectItem value="low"><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>Low</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>Assign To</Label>
-                                    <Select value={newTask.assigned_to || 'unassigned'} onValueChange={v => setNewTask({ ...newTask, assigned_to: v })}>
-                                        <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                                        <SelectContent style={{ zIndex: 9999 }}>
-                                            <SelectItem value="unassigned">Unassigned</SelectItem>
-                                            {Array.isArray(team) && team.map(member => (
-                                                <SelectItem key={member.id} value={String(member.id)}>{member.name}</SelectItem>
+                                    <Label>Related Customer</Label>
+                                    <Select value={newTask.customer_id || 'none'} onValueChange={v => setNewTask({ ...newTask, customer_id: v === 'none' ? '' : v })}>
+                                        <SelectTrigger><SelectValue placeholder="Select Customer (Optional)" /></SelectTrigger>
+                                        <SelectContent style={{ zIndex: 9999, maxHeight: '200px' }}>
+                                            <SelectItem value="none">No Customer Linked</SelectItem>
+                                            {leads.map(lead => (
+                                                <SelectItem key={lead.id} value={String(lead.id)}>{lead.name} ({lead.email})</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <Button onClick={handleCreateTask} className="w-full">Create Task</Button>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>Priority</Label>
+                                        <Select value={newTask.priority} onValueChange={v => setNewTask({ ...newTask, priority: v })}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent style={{ zIndex: 9999 }}>
+                                                <SelectItem value="high">High</SelectItem>
+                                                <SelectItem value="medium">Medium</SelectItem>
+                                                <SelectItem value="low">Low</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>Assign To</Label>
+                                        <Select value={newTask.assigned_to || 'unassigned'} onValueChange={v => setNewTask({ ...newTask, assigned_to: v })}>
+                                            <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                                            <SelectContent style={{ zIndex: 9999 }}>
+                                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                                {Array.isArray(team) && team.map(member => (
+                                                    <SelectItem key={member.id} value={String(member.id)}>{member.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>Status</Label>
+                                    <Select value={newTask.status || 'open'} onValueChange={v => setNewTask({ ...newTask, status: v })}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent style={{ zIndex: 9999 }}>
+                                            <SelectItem value="open">To Do</SelectItem>
+                                            <SelectItem value="in_progress">In Progress</SelectItem>
+                                            <SelectItem value="done">Done</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Button onClick={handleCreateTask} className="w-full bg-zinc-900 text-white hover:bg-zinc-800">Create Task</Button>
                             </div>
                         </DialogContent>
                     </Dialog>
                 </div>
+            </header>
+
+            {/* 
+                LAYER 2 - INTELLIGENCE (STATS) 
+                Context: "What is happening right now?"
+            */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+                <Card className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm hover:shadow-md transition-shadow group">
+                    <CardContent className="p-5 flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Total Tasks</p>
+                            <p className="text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-zinc-50">{stats.total}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:scale-110 transition-transform duration-300">
+                            <ListTodo className="w-6 h-6" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-orange-50/40 dark:bg-orange-950/10 backdrop-blur-md border border-orange-200/50 dark:border-orange-900/30 shadow-sm hover:shadow-md transition-shadow group">
+                    <CardContent className="p-5 flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-orange-600/80 dark:text-orange-400/80">Due Today</p>
+                            <p className="text-2xl lg:text-3xl font-bold text-orange-700 dark:text-orange-400">{stats.dueToday}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-300">
+                            <Clock className="w-6 h-6" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-red-50/40 dark:bg-red-950/10 backdrop-blur-md border border-red-200/50 dark:border-red-900/30 shadow-sm hover:shadow-md transition-shadow group">
+                    <CardContent className="p-5 flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-red-600/80 dark:text-red-400/80">High Priority</p>
+                            <p className="text-2xl lg:text-3xl font-bold text-red-700 dark:text-red-400">{stats.highPriority}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600 dark:text-red-400 group-hover:scale-110 transition-transform duration-300">
+                            <AlertCircle className="w-6 h-6" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-emerald-50/40 dark:bg-emerald-950/10 backdrop-blur-md border border-emerald-200/50 dark:border-emerald-900/30 shadow-sm hover:shadow-md transition-shadow group">
+                    <CardContent className="p-5 flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80 dark:text-emerald-400/80">Completed</p>
+                            <p className="text-2xl lg:text-3xl font-bold text-emerald-700 dark:text-emerald-400">{stats.completed}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-300">
+                            <CheckCircle2 className="w-6 h-6" />
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm border-zinc-200/60 dark:border-zinc-800/60 shadow-sm">
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Total Tasks</p>
-                            <p className="text-2xl font-bold">{stats.total}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600">
-                            <ListTodo className="w-5 h-5" />
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm border-zinc-200/60 dark:border-zinc-800/60 shadow-sm">
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Due Today</p>
-                            <p className="text-2xl font-bold text-orange-600">{stats.dueToday}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center text-orange-600">
-                            <Calendar className="w-5 h-5" />
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm border-zinc-200/60 dark:border-zinc-800/60 shadow-sm">
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">High Priority</p>
-                            <p className="text-2xl font-bold text-red-600">{stats.highPriority}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-600">
-                            <AlertCircle className="w-5 h-5" />
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm border-zinc-200/60 dark:border-zinc-800/60 shadow-sm">
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                            <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-950/30 flex items-center justify-center text-green-600">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Tabs defaultValue="tasks" className="w-full">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-1 mb-6">
-                    <TabsList className="bg-transparent h-auto p-0 gap-6">
+            {/* 
+                LAYER 3 - CONTROL (OPERATIONS BAR)
+                Context: "How do I want to see the data?"
+            */}
+            <Tabs defaultValue="tasks" className="w-full space-y-6">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-0">
+                    <TabsList className="bg-transparent h-12 p-0 gap-8">
                         <TabsTrigger
                             value="tasks"
-                            className="bg-transparent border-0 rounded-none shadow-none p-0 pb-3 data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary text-muted-foreground hover:text-foreground transition-all rounded-t-sm px-2 text-base"
+                            className="h-full bg-transparent border-b-2 border-transparent rounded-none px-1 text-sm font-medium text-zinc-500 data-[state=active]:border-zinc-900 dark:data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100 transition-all hover:text-zinc-900 dark:hover:text-zinc-300"
                         >
                             Tasks & Todos
                         </TabsTrigger>
                         <TabsTrigger
                             value="timeline"
-                            className="bg-transparent border-0 rounded-none shadow-none p-0 pb-3 data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary text-muted-foreground hover:text-foreground transition-all rounded-t-sm px-2 text-base"
+                            className="h-full bg-transparent border-b-2 border-transparent rounded-none px-1 text-sm font-medium text-zinc-500 data-[state=active]:border-zinc-900 dark:data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100 transition-all hover:text-zinc-900 dark:hover:text-zinc-300"
                         >
                             Global Activity
                         </TabsTrigger>
                     </TabsList>
 
-                    {/* Filters Toolbar - Only visible for tasks tab but kept in flex for alignment */}
-                    <div className="flex items-center gap-2 flex-wrap">
+                    {/* CONTROL CLUSTER: Filters & Views */}
+                    <div className="flex items-center gap-3 w-full lg:w-auto pb-3 lg:pb-0 overflow-x-auto no-scrollbar">
+                        {/* Status Filter */}
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="h-8 border-dashed border-zinc-300 dark:border-zinc-700 bg-transparent min-w-[100px] text-xs font-medium">
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <ListTodo className="w-3 h-3" />
-                                    <span className="text-foreground">{statusFilter === 'all' ? 'Status' : statusFilter}</span>
-                                </div>
+                            <SelectTrigger className="h-9 w-auto min-w-[110px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-xs font-medium rounded-lg shadow-sm">
+                                <span className="flex items-center gap-2">
+                                    <ListTodo className="w-3.5 h-3.5 text-zinc-500" />
+                                    {statusFilter === 'all' ? 'Status' : statusFilter.replace('_', ' ')}
+                                </span>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
@@ -485,12 +528,13 @@ export default function WorkspacePage() {
                             </SelectContent>
                         </Select>
 
+                        {/* Priority Filter */}
                         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                            <SelectTrigger className="h-8 border-dashed border-zinc-300 dark:border-zinc-700 bg-transparent min-w-[100px] text-xs font-medium">
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <AlertCircle className="w-3 h-3" />
-                                    <span className="text-foreground">{priorityFilter === 'all' ? 'Priority' : priorityFilter}</span>
-                                </div>
+                            <SelectTrigger className="h-9 w-auto min-w-[110px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-xs font-medium rounded-lg shadow-sm">
+                                <span className="flex items-center gap-2">
+                                    <AlertCircle className="w-3.5 h-3.5 text-zinc-500" />
+                                    {priorityFilter === 'all' ? 'Priority' : priorityFilter}
+                                </span>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Priority</SelectItem>
@@ -500,12 +544,13 @@ export default function WorkspacePage() {
                             </SelectContent>
                         </Select>
 
+                        {/* User Filter */}
                         <Select value={userFilter} onValueChange={setUserFilter}>
-                            <SelectTrigger className="h-8 border-dashed border-zinc-300 dark:border-zinc-700 bg-transparent min-w-[100px] text-xs font-medium">
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <User className="w-3 h-3" />
-                                    <span className="text-foreground">{userFilter === 'all' ? 'User' : 'Selected User'}</span>
-                                </div>
+                            <SelectTrigger className="h-9 w-auto min-w-[110px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-xs font-medium rounded-lg shadow-sm">
+                                <span className="flex items-center gap-2">
+                                    <User className="w-3.5 h-3.5 text-zinc-500" />
+                                    {userFilter === 'all' ? 'User' : 'Selected User'}
+                                </span>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Users</SelectItem>
@@ -515,34 +560,33 @@ export default function WorkspacePage() {
                             </SelectContent>
                         </Select>
 
-                        {/* View Toggle */}
-                        <div className="flex items-center border rounded-lg overflow-hidden ml-2">
+                        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+
+                        {/* View Toggles */}
+                        <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-lg">
                             <Button
                                 variant={viewMode === 'clickup' ? 'default' : 'ghost'}
                                 size="sm"
-                                className="h-8 rounded-none px-3"
+                                className={`h-7 px-3 rounded-md text-xs font-medium transition-all ${viewMode === 'clickup' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
                                 onClick={() => setViewMode('clickup')}
-                                title="ClickUp View"
                             >
-                                <ListTodo className="w-4 h-4" />
+                                <ListTodo className="w-3.5 h-3.5 mr-1.5" /> List
                             </Button>
                             <Button
                                 variant={viewMode === 'kanban' ? 'default' : 'ghost'}
                                 size="sm"
-                                className="h-8 rounded-none px-3"
+                                className={`h-7 px-3 rounded-md text-xs font-medium transition-all ${viewMode === 'kanban' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
                                 onClick={() => setViewMode('kanban')}
-                                title="Kanban View"
                             >
-                                <Settings className="w-4 h-4" />
+                                <Settings className="w-3.5 h-3.5 mr-1.5" /> Board
                             </Button>
                             <Button
                                 variant={viewMode === 'list' ? 'default' : 'ghost'}
                                 size="sm"
-                                className="h-8 rounded-none px-3"
+                                className={`h-7 px-3 rounded-md text-xs font-medium transition-all ${viewMode === 'list' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
                                 onClick={() => setViewMode('list')}
-                                title="Card View"
                             >
-                                <Activity className="w-4 h-4" />
+                                <Activity className="w-3.5 h-3.5 mr-1.5" /> Cards
                             </Button>
                         </div>
                     </div>
@@ -559,17 +603,18 @@ export default function WorkspacePage() {
                             <p className="text-zinc-500 text-sm max-w-sm text-center mt-2">
                                 You're all caught up! Create a new task to get started or adjust your filters.
                             </p>
-                            <Button variant="outline" className="mt-6" onClick={() => setAddTaskOpen(true)}>Create Task</Button>
+                            <Button variant="outline" className="mt-6" onClick={() => openCreateTaskDialog('open')}>Create Task</Button>
                         </div>
                     ) : viewMode === 'clickup' ? (
                         <TaskListView
                             tasks={tasks as any}
                             team={team}
-                            onStatusChange={(taskId, status) => handleTaskUpdate(taskId, { status } as any)}
-                            onPriorityChange={(taskId, priority) => handleTaskUpdate(taskId, { priority } as any)}
-                            onAssigneeChange={(taskId, userId) => handleTaskUpdate(taskId, { assigned_to: userId ?? undefined } as any)}
+                            onStatusChange={(taskId, status) => updateTask(taskId, { status } as any)}
+                            onPriorityChange={(taskId, priority) => updateTask(taskId, { priority } as any)}
+                            onAssigneeChange={(taskId, userId) => updateTask(taskId, { assigned_to: userId ?? undefined } as any)}
                             onTaskClick={handleTaskClick as any}
                             onQuickAdd={handleQuickAdd}
+                            onOpenCreateTask={openCreateTaskDialog}
                             onDelete={handleDeleteTask}
                             onDuplicate={handleDuplicate}
                             selectedTasks={selectedTasks}
@@ -579,7 +624,7 @@ export default function WorkspacePage() {
                     ) : viewMode === 'kanban' ? (
                         <KanbanBoard
                             tasks={tasks as any}
-                            onStatusChange={(taskId, newStatus) => handleUpdateTask(taskId, 'status', newStatus)}
+                            onStatusChange={(taskId, newStatus) => updateTask(taskId, { status: newStatus } as any)}
                             onTaskClick={(task) => { setEditingTask(task); setEditTaskOpen(true); }}
                         />
                     ) : (
@@ -596,7 +641,7 @@ export default function WorkspacePage() {
 
                                     {/* Checkbox / Status */}
                                     <div className="pl-3 flex flex-col justify-start pt-1">
-                                        <Select value={task.status} onValueChange={v => handleUpdateTask(task.id, 'status', v)}>
+                                        <Select value={task.status} onValueChange={v => updateTask(task.id, { status: v })}>
                                             <SelectTrigger className="w-auto h-auto border-none shadow-none p-0 [&>svg]:hidden focus:ring-0">
                                                 <div className="flex flex-col items-center gap-1">
                                                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${task.status === 'done' ? 'bg-green-500 border-green-500 text-white' :
@@ -702,7 +747,7 @@ export default function WorkspacePage() {
 
                                             <Select
                                                 value={task.assigned_to ? String(task.assigned_to) : "unassigned"}
-                                                onValueChange={v => handleUpdateTask(task.id, 'assigned_to', v)}
+                                                onValueChange={v => updateTask(task.id, { assigned_to: v === 'unassigned' ? undefined : Number(v) } as any)}
                                             >
                                                 <SelectTrigger className="ml-auto w-auto h-auto border-none shadow-none p-0 [&>svg]:hidden focus:ring-0">
                                                     <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium uppercase tracking-wide border transition-all hover:border-primary/50 cursor-pointer ${task.assigned_name
@@ -789,7 +834,7 @@ export default function WorkspacePage() {
                 isOpen={drawerOpen}
                 onClose={() => { setDrawerOpen(false); setSelectedTask(null); }}
                 team={team}
-                onUpdate={(taskId, updates) => handleTaskUpdate(taskId, updates as Partial<Task>)}
+                onUpdate={(taskId, updates) => updateTask(taskId, updates as Partial<Task>)}
                 onAddComment={handleAddComment}
             />
         </div>
