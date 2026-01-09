@@ -34,6 +34,7 @@ interface Customer {
     created_at: string;
     order_status?: string;
     order_source?: string;
+    campaign_name?: string;
 }
 
 export default function LeadsPage() {
@@ -392,7 +393,15 @@ export default function LeadsPage() {
                                             {lead.order_source === 'lifetime_12k' ? <Badge className="bg-purple-100 text-purple-700 border-purple-200">12k Offer</Badge> :
                                                 lead.order_source === 'newyear_5k' ? <Badge className="bg-red-100 text-red-700 border-red-200">5k Offer</Badge> :
                                                     lead.source === 'Facebook Lead Form' ? <Badge className="bg-blue-100 text-blue-700 border-blue-200">Facebook 📘</Badge> :
-                                                        lead.source}
+                                                        lead.source === 'csv_import' && lead.campaign_name ? (
+                                                            <div className="flex flex-col items-start gap-1">
+                                                                <span className="text-xs font-medium">{lead.source}</span>
+                                                                <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-600 border-slate-200 max-w-[150px] truncate" title={lead.campaign_name}>
+                                                                    {lead.campaign_name}
+                                                                </Badge>
+                                                            </div>
+                                                        ) :
+                                                            lead.source}
                                         </TableCell>
                                         <TableCell>
                                             <Select

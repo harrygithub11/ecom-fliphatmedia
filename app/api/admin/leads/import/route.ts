@@ -86,6 +86,10 @@ export async function POST(request: Request) {
         const emailCol = detectColumn(headers, emailPatterns);
         const timestampCol = detectColumn(headers, timestampPatterns);
 
+        // Detect Campaign / Ad Name
+        const campaignPatterns = ['campaign_name', 'campaign name', 'campaign', 'ad_name', 'ad name', 'adset_name', 'adset name', 'source_detail'];
+        const campaignCol = detectColumn(headers, campaignPatterns);
+
         if (!nameCol && !emailCol) {
             return NextResponse.json({
                 success: false,
@@ -149,9 +153,16 @@ export async function POST(request: Request) {
 
                     // Insert customer with timestamp if available
                     const [insertResult]: any = await connection.execute(
-                        `INSERT INTO customers (name, phone, email, source, stage, score, owner, created_at) 
-                         VALUES (?, ?, ?, 'csv_import', 'new', 'cold', ?, ?)`,
-                        [name || 'Unknown', phone, email, session.name || 'unassigned', submissionTime || new Date().toISOString().slice(0, 19).replace('T', ' ')]
+                        `INSERT INTO customers (name, phone, email, source, campaign_name, stage, score, owner, created_at) 
+                         VALUES (?, ?, ?, 'csv_import', ?, 'new', 'cold', ?, ?)`,
+                        [
+                            name || 'Unknown',
+                            phone,
+                            email,
+                            campaignCol ? (String(row[campaignCol] || '').trim() || null) : null,
+                            session.name || 'unassigned',
+                            submissionTime || new Date().toISOString().slice(0, 19).replace('T', ' ')
+                        ]
                     );
 
                     const customerId = insertResult.insertId;
