@@ -103,6 +103,7 @@ export async function POST(request: Request) {
         const results = {
             total: rows.length,
             imported: 0,
+            updated: 0,
             skipped: 0,
             failed: 0,
             errors: [] as string[]
@@ -138,21 +139,68 @@ export async function POST(request: Request) {
                 }
 
                 try {
+                    // Extract campaign name early for use in duplicate check and insert
+                    const campaignName = campaignCol ? (String(row[campaignCol] || '').trim() || null) : null;
+
                     // Check for duplicate email
                     if (email) {
-                        const [existing]: any = await connection.execute(
-                            'SELECT id FROM customers WHERE email = ?',
+                        const [existingRows]: any = await connection.execute(
+                            'SELECT id, name, phone, campaign_name FROM customers WHERE email = ?',
                             [email]
                         );
 
-                        if (existing.length > 0) {
-                            results.skipped++;
-                            continue; // Skip duplicate
+                        if (existingRows.length > 0) {
+                            const existing = existingRows[0];
+                            const updates: string[] = [];
+                            const updateParams: any[] = [];
+                            const updatedFields: string[] = [];
+
+                            // Enrichment Logic: Only update if existing is missing/empty and new has value
+
+                            // 1. Campaign Name
+                            if (campaignName && !existing.campaign_name) {
+                                updates.push('campaign_name = ?');
+                                updateParams.push(campaignName);
+                                updatedFields.push('Campaign');
+                            }
+
+                            // 2. Phone
+                            if (phone && !existing.phone) {
+                                updates.push('phone = ?');
+                                updateParams.push(phone);
+                                updatedFields.push('Phone');
+                            }
+
+                            // 3. Name (only if unknown)
+                            if (name && (!existing.name || existing.name === 'Unknown')) {
+                                updates.push('name = ?');
+                                updateParams.push(name);
+                                updatedFields.push('Name');
+                            }
+
+                            if (updates.length > 0) {
+                                updateParams.push(existing.id);
+                                await connection.execute(
+                                    `UPDATE customers SET ${updates.join(', ')} WHERE id = ?`,
+                                    updateParams
+                                );
+
+                                // Log enrichment
+                                await connection.execute(
+                                    `INSERT INTO interactions (customer_id, type, content, created_by) 
+                                     VALUES (?, 'system_event', ?, ?)`,
+                                    [existing.id, `Lead enriched via import: Added ${updatedFields.join(', ')}`, session.id]
+                                );
+
+                                results.updated++;
+                            } else {
+                                results.skipped++;
+                            }
+                            continue;
                         }
                     }
 
                     // Insert customer with timestamp if available
-                    const campaignName = campaignCol ? (String(row[campaignCol] || '').trim() || null) : null;
 
                     const [insertResult]: any = await connection.execute(
                         `INSERT INTO customers (name, phone, email, source, campaign_name, stage, score, owner, created_at) 
@@ -196,7 +244,7 @@ export async function POST(request: Request) {
             await logAdminActivity(
                 session.id,
                 'csv_import',
-                `Imported ${results.imported} leads from CSV (${results.total} total rows, ${results.skipped} skipped, ${results.failed} failed)`
+                `Imported ${results.imported} leads, Enriched ${results.updated} leads (${results.total} total rows, ${results.skipped} skipped, ${results.failed} failed)`
             );
 
         } finally {
@@ -205,7 +253,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             success: true,
-            message: `Successfully imported ${results.imported} leads`,
+            message: `Successfully imported ${results.imported} leads and enriched ${results.updated} existing leads`,
             detectedColumns: {
                 name: nameCol,
                 phone: phoneCol,
