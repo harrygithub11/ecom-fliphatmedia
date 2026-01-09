@@ -71,7 +71,7 @@ function ProfileContent() {
 
     const fetchProfile = async () => {
         try {
-            const res = await fetch('/api/admin/profile');
+            const res = await fetch('/api/admin/profile', { cache: 'no-store' });
             const data = await res.json();
             if (data.success) {
                 setProfile(data.user);
