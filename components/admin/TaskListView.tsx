@@ -240,7 +240,7 @@ function TaskRow({
             </Select>
 
             {/* Comments */}
-            <div className={`w-12 text-xs flex items-center gap-1 ${task.unread_comments_count ? 'text-blue-600 font-bold' : 'text-zinc-500'}`}>
+            <div className={`w-20 text-xs flex items-center gap-1 ${task.unread_comments_count ? 'text-blue-600 font-bold' : 'text-zinc-500'}`}>
                 <MessageSquare className="w-3 h-3" />
                 {task.unread_comments_count ? (
                     <Badge className="h-4 px-1 text-[10px] bg-blue-500 hover:bg-blue-600 border-none text-white leading-none min-w-[16px] justify-center">
@@ -449,13 +449,13 @@ export default function TaskListView({
                 <div className="w-4" /> {/* grip */}
                 <div className="w-4" /> {/* check */}
                 <div className="w-5" /> {/* icon */}
-                <div className="flex-1">Task Name</div>
+                <div className="flex-1">Name</div>
                 <div className="w-10 text-center">Assignee</div>
-                <div className="w-24 pl-2">Due Date</div>
+                <div className="w-24 pl-2">Due date</div>
                 <div className="w-24">Priority</div>
                 <div className="w-28">Status</div>
-                <div className="w-12 text-center">Chat</div>
-                <div className="w-7" /> {/* actions */}
+                <div className="w-20">Comments</div>
+                <div className="w-7 text-center"><Plus className="w-4 h-4 mx-auto" /></div> {/* actions */}
             </div>
 
             <StatusGroup
