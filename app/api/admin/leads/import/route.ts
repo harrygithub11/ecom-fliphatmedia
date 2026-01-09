@@ -140,7 +140,7 @@ export async function POST(request: Request) {
                     await connection.execute(
                         `INSERT INTO customers (name, phone, email, source, stage, score, owner, created_at) 
                          VALUES (?, ?, ?, 'csv_import', 'new', 'cold', ?, NOW())`,
-                        [name || 'Unknown', phone, email, session.id]
+                        [name || 'Unknown', phone, email, session.name || 'unassigned']
                     );
 
                     results.imported++;
