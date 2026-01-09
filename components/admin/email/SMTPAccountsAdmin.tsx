@@ -64,7 +64,11 @@ export function SMTPAccountsAdmin() {
 
     const fetchAccounts = async () => {
         try {
-            const res = await fetch('/api/admin/smtp-accounts');
+            const res = await fetch('/api/admin/smtp-accounts', {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' },
+                credentials: 'include'
+            });
             const data = await res.json();
             if (data.success) {
                 setAccounts(data.accounts);
@@ -86,7 +90,9 @@ export function SMTPAccountsAdmin() {
             const res = await fetch('/api/admin/smtp-accounts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, test_connection: !skipVerification })
+                body: JSON.stringify({ ...formData, test_connection: !skipVerification }),
+                cache: 'no-store',
+                credentials: 'include'
             });
 
             console.log('📥 Response status:', res.status);
