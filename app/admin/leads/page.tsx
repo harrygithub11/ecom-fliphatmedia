@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Mail, Phone, MoreHorizontal, Plus } from 'lucide-react';
+import { Search, Mail, Phone, MoreHorizontal, Plus, Upload } from 'lucide-react';
+import { CSVImportModal } from '@/components/admin/CSVImportModal';
 import {
     Table,
     TableBody,
@@ -45,6 +46,7 @@ export default function LeadsPage() {
     const [newLeadPhone, setNewLeadPhone] = useState('');
     const [newLeadSource, setNewLeadSource] = useState('manual');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [csvImportOpen, setCsvImportOpen] = useState(false);
 
     // Team members for assignment
     const [admins, setAdmins] = useState<{ id: number, name: string, email: string }[]>([]);
@@ -236,46 +238,63 @@ export default function LeadsPage() {
                     <p className="text-muted-foreground">The Control Room: Manage and track every potential deal.</p>
                 </div>
 
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button><Plus className="mr-2 h-4 w-4" /> Add Manual Lead</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Add New Lead</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">Name</Label>
-                                <Input id="name" className="col-span-3" placeholder="John Doe" value={newLeadName} onChange={e => setNewLeadName(e.target.value)} />
+                <div className="flex gap-2">
+                    <Button onClick={() => setCsvImportOpen(true)} variant="outline">
+                        <Upload className="mr-2 h-4 w-4" /> Import CSV
+                    </Button>
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button><Plus className="mr-2 h-4 w-4" /> Add Manual Lead</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Add New Lead</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Name</Label>
+                                    <Input id="name" className="col-span-3" placeholder="John Doe" value={newLeadName} onChange={e => setNewLeadName(e.target.value)} />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Email</Label>
+                                    <Input id="email" className="col-span-3" placeholder="john@example.com" value={newLeadEmail} onChange={e => setNewLeadEmail(e.target.value)} />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Phone</Label>
+                                    <Input id="phone" className="col-span-3" placeholder="+91 98765 43210" value={newLeadPhone} onChange={e => setNewLeadPhone(e.target.value)} />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Source</Label>
+                                    <Select value={newLeadSource} onValueChange={setNewLeadSource}>
+                                        <SelectTrigger className="col-span-3"><SelectValue placeholder="Select source" /></SelectTrigger>
+                                        <SelectContent className="z-[9999]">
+                                            <SelectItem value="manual">Manual Entry</SelectItem>
+                                            <SelectItem value="phone">Phone Call</SelectItem>
+                                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                                            <SelectItem value="website">Website</SelectItem>
+                                            <SelectItem value="referral">Referral</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">Email</Label>
-                                <Input id="email" className="col-span-3" placeholder="john@example.com" value={newLeadEmail} onChange={e => setNewLeadEmail(e.target.value)} />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">Phone</Label>
-                                <Input id="phone" className="col-span-3" placeholder="+91 98765 43210" value={newLeadPhone} onChange={e => setNewLeadPhone(e.target.value)} />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">Source</Label>
-                                <Select value={newLeadSource} onValueChange={setNewLeadSource}>
-                                    <SelectTrigger className="col-span-3"><SelectValue placeholder="Select source" /></SelectTrigger>
-                                    <SelectContent className="z-[9999]">
-                                        <SelectItem value="manual">Manual Entry</SelectItem>
-                                        <SelectItem value="phone">Phone Call</SelectItem>
-                                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                                        <SelectItem value="website">Website</SelectItem>
-                                        <SelectItem value="referral">Referral</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button onClick={handleSaveLead}>Save Lead</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                            <DialogFooter>
+                                <Button onClick={handleSaveLead}>Save Lead</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+
+                {/* CSV Import Modal */}
+                <CSVImportModal
+                    open={csvImportOpen}
+                    onClose={() => setCsvImportOpen(false)}
+                    onSuccess={() => {
+                        // Refresh leads after successful import
+                        fetch('/api/admin/leads')
+                            .then(res => res.json())
+                            .then(data => Array.isArray(data) && setLeads(data));
+                    }}
+                />
             </div>
 
             <Card>
