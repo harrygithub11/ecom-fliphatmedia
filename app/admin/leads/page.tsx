@@ -233,6 +233,25 @@ export default function LeadsPage() {
         }
     };
 
+    const deleteLead = async (id: number) => {
+        try {
+            const res = await fetch(`/api/admin/leads/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+
+            if (data.success) {
+                setLeads(leads.filter(l => l.id !== id));
+                toast({ description: data.message || 'Lead deleted successfully', className: 'bg-green-500 text-white' });
+            } else {
+                toast({ variant: 'destructive', description: data.message || 'Failed to delete lead' });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', description: 'Failed to delete lead' });
+        } finally {
+            setDeleteLeadId(null);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
