@@ -27,9 +27,14 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const session = await getSession();
+        console.log('🔐 Session check:', session);
+
         if (!session || session.role !== 'admin') {
+            console.log('❌ Auth failed - session:', session, 'role:', session?.role);
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
+
+        console.log('✅ Auth passed for:', session.email);
 
         const body = await request.json();
         const { name, provider, host, port, username, password, from_email, from_name, test_connection } = body;
