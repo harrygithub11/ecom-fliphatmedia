@@ -78,24 +78,33 @@ export function SMTPAccountsAdmin() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('🔴 FORM SUBMIT TRIGGERED');
         setTesting(true);
 
         try {
+            console.log('📤 Sending data:', { ...formData, test_connection: !skipVerification });
             const res = await fetch('/api/admin/smtp-accounts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...formData, test_connection: !skipVerification })
             });
+
+            console.log('📥 Response status:', res.status);
             const data = await res.json();
+            console.log('📥 Response data:', data);
 
             if (data.success) {
+                alert('✅ SUCCESS: Account saved!');
                 toast({ title: 'Success', description: 'Account added and verified!' });
                 setOpen(false);
                 fetchAccounts();
             } else {
+                alert('❌ ERROR: ' + data.message);
                 toast({ title: 'Error', description: data.message, variant: 'destructive' });
             }
-        } catch (error) {
+        } catch (error: any) {
+            console.error('💥 EXCEPTION:', error);
+            alert('💥 EXCEPTION: ' + error.message);
             toast({ title: 'Error', description: 'Failed to create account', variant: 'destructive' });
         } finally {
             setTesting(false);
