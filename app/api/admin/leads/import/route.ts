@@ -79,10 +79,12 @@ export async function POST(request: Request) {
         const namePatterns = ['full_name', 'full name', 'customer_name', 'customer name', 'contact_name', 'contact name', 'name', 'client_name', 'client name'];
         const phonePatterns = ['phone_number', 'phone number', 'mobile_number', 'mobile number', 'phone', 'mobile', 'cell', 'telephone', 'contact_number', 'contact number', 'number'];
         const emailPatterns = ['email_address', 'email address', 'email', 'e-mail', 'e_mail', 'contact_email', 'contact email', 'mail'];
+        const timestampPatterns = ['created_time', 'created_at', 'submission_time', 'submitted_at', 'timestamp', 'date', 'created'];
 
         const nameCol = detectColumn(headers, namePatterns);
         const phoneCol = detectColumn(headers, phonePatterns);
         const emailCol = detectColumn(headers, emailPatterns);
+        const timestampCol = detectColumn(headers, timestampPatterns);
 
         if (!nameCol && !emailCol) {
             return NextResponse.json({
@@ -108,6 +110,15 @@ export async function POST(request: Request) {
                 const name = nameCol ? String(row[nameCol] || '').trim() : '';
                 const phone = phoneCol ? cleanPhone(String(row[phoneCol] || '')) : '';
                 const email = emailCol ? String(row[emailCol] || '').trim() : '';
+
+                // Parse timestamp if available
+                let submissionTime = null;
+                if (timestampCol && row[timestampCol]) {
+                    const parsedDate = new Date(row[timestampCol]);
+                    if (!isNaN(parsedDate.getTime())) {
+                        submissionTime = parsedDate.toISOString().slice(0, 19).replace('T', ' ');
+                    }
+                }
 
                 // Skip if no name and no email
                 if (!name && !email) {
@@ -136,12 +147,28 @@ export async function POST(request: Request) {
                         }
                     }
 
-                    // Insert customer
-                    await connection.execute(
+                    // Insert customer with timestamp if available
+                    const [insertResult]: any = await connection.execute(
                         `INSERT INTO customers (name, phone, email, source, stage, score, owner, created_at) 
-                         VALUES (?, ?, ?, 'csv_import', 'new', 'cold', ?, NOW())`,
-                        [name || 'Unknown', phone, email, session.name || 'unassigned']
+                         VALUES (?, ?, ?, 'csv_import', 'new', 'cold', ?, ?)`,
+                        [name || 'Unknown', phone, email, session.name || 'unassigned', submissionTime || new Date().toISOString().slice(0, 19).replace('T', ' ')]
                     );
+
+                    const customerId = insertResult.insertId;
+
+                    // Create initial timeline entry if we have a timestamp
+                    if (submissionTime) {
+                        await connection.execute(
+                            `INSERT INTO interactions (customer_id, type, content, created_by, created_at) 
+                             VALUES (?, 'system_event', ?, ?, ?)`,
+                            [
+                                customerId,
+                                'Lead submitted via form',
+                                session.id,
+                                submissionTime
+                            ]
+                        );
+                    }
 
                     results.imported++;
 
@@ -169,7 +196,8 @@ export async function POST(request: Request) {
             detectedColumns: {
                 name: nameCol,
                 phone: phoneCol,
-                email: emailCol
+                email: emailCol,
+                timestamp: timestampCol
             },
             results
         });
