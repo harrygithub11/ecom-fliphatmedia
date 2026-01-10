@@ -33,7 +33,7 @@ const worker = new Worker('email-queue', async job => {
         // 1. Fetch Email & Account Details
         const [rows]: any = await db.execute(`
             SELECT e.*, 
-                   sa.host, sa.port, sa.username, sa.encrypted_password, sa.secure, sa.from_email as account_email
+                   sa.host, sa.port, sa.username, sa.encrypted_password, sa.from_email as account_email
             FROM emails e
             JOIN smtp_accounts sa ON e.smtp_account_id = sa.id
             WHERE e.id = ?
@@ -53,11 +53,11 @@ const worker = new Worker('email-queue', async job => {
             throw new Error(`Failed to decrypt password for account ${email.account_email}`);
         }
 
-        // 3. Create Transporter
+        // 3. Create Transporter (port-based security: 465 is secure, 587 is STARTTLS)
         const transporter = nodemailer.createTransport({
             host: email.host,
             port: email.port,
-            secure: email.secure === 1, // true for 465, false for 587 usually
+            secure: email.port === 465, // true for 465, false for 587
             auth: {
                 user: email.username,
                 pass: password,
