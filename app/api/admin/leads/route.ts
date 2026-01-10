@@ -36,7 +36,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, email, phone, source } = body;
+        const { name, email, phone, source, location, budget, notes } = body;
 
         if (!name || !email) {
             return NextResponse.json({ success: false, message: 'Name and Email are required' }, { status: 400 });
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
         const connection = await pool.getConnection();
         try {
             const [result]: any = await connection.execute(
-                'INSERT INTO customers (name, email, phone, source, stage, score) VALUES (?, ?, ?, ?, ?, ?)',
-                [name, email, phone || '', source || 'Manual', 'new', 'cold']
+                'INSERT INTO customers (name, email, phone, source, location, budget, notes, stage, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [name, email, phone || '', source || 'Manual', location || '', budget || 0, notes || '', 'new', 'cold']
             );
             return NextResponse.json({ success: true, id: result.insertId });
         } finally {

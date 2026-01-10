@@ -1,0 +1,1 @@
+ALTER TABLE customers ADD COLUMN budget DECIMAL(10, 2) DEFAULT 0.00 AFTER location;

@@ -50,6 +50,9 @@ export default function LeadsPage() {
     const [newLeadName, setNewLeadName] = useState('');
     const [newLeadEmail, setNewLeadEmail] = useState('');
     const [newLeadPhone, setNewLeadPhone] = useState('');
+    const [newLeadLocation, setNewLeadLocation] = useState('');
+    const [newLeadBudget, setNewLeadBudget] = useState('');
+    const [newLeadNotes, setNewLeadNotes] = useState('');
     const [newLeadSource, setNewLeadSource] = useState('manual');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [csvImportOpen, setCsvImportOpen] = useState(false);
@@ -156,7 +159,10 @@ export default function LeadsPage() {
                     name: newLeadName,
                     email: newLeadEmail,
                     phone: newLeadPhone,
-                    source: newLeadSource
+                    source: newLeadSource,
+                    location: newLeadLocation,
+                    budget: newLeadBudget,
+                    notes: newLeadNotes
                 })
             });
             const json = await res.json();
@@ -171,6 +177,9 @@ export default function LeadsPage() {
                 setNewLeadName('');
                 setNewLeadEmail('');
                 setNewLeadPhone('');
+                setNewLeadLocation('');
+                setNewLeadBudget('');
+                setNewLeadNotes('');
                 setNewLeadSource('manual');
             } else {
                 alert("Failed: " + json.message);
@@ -277,7 +286,7 @@ export default function LeadsPage() {
                         <DialogTrigger asChild>
                             <Button><Plus className="mr-2 h-4 w-4" /> Add Manual Lead</Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-lg">
                             <DialogHeader>
                                 <DialogTitle>Add New Lead</DialogTitle>
                             </DialogHeader>
@@ -295,6 +304,14 @@ export default function LeadsPage() {
                                     <Input id="phone" className="col-span-3" placeholder="+91 98765 43210" value={newLeadPhone} onChange={e => setNewLeadPhone(e.target.value)} />
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Location</Label>
+                                    <Input id="location" className="col-span-3" placeholder="City, Country" value={newLeadLocation} onChange={e => setNewLeadLocation(e.target.value)} />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Budget</Label>
+                                    <Input id="budget" type="number" className="col-span-3" placeholder="0.00" value={newLeadBudget} onChange={e => setNewLeadBudget(e.target.value)} />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
                                     <Label className="text-right">Source</Label>
                                     <Select value={newLeadSource} onValueChange={setNewLeadSource}>
                                         <SelectTrigger className="col-span-3"><SelectValue placeholder="Select source" /></SelectTrigger>
@@ -306,6 +323,12 @@ export default function LeadsPage() {
                                             <SelectItem value="referral">Referral</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Notes</Label>
+                                    <div className="col-span-3">
+                                        <Input id="notes" placeholder="Initial requirements..." value={newLeadNotes} onChange={e => setNewLeadNotes(e.target.value)} />
+                                    </div>
                                 </div>
                             </div>
                             <DialogFooter>
