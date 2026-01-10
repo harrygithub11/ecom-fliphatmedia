@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import {
     Phone, Mail, Globe, Calendar, Clock,
     MessageSquare, PhoneCall, FileText, CheckCircle2,
-    Plus, Send, Paperclip, Rocket, MapPin, StickyNote
+    Plus, Send, Paperclip, Rocket, MapPin, StickyNote, Pencil
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -148,6 +148,16 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
 
     // Email State
     const [composeOpen, setComposeOpen] = useState(false);
+
+    // Notes Edit State
+    const [isEditingNotes, setIsEditingNotes] = useState(false);
+    const [tempNotes, setTempNotes] = useState('');
+
+    const handleSaveNotes = async () => {
+        if (!data?.profile?.id) return;
+        await updateLead('notes', tempNotes);
+        setIsEditingNotes(false);
+    };
     const [editProfileOpen, setEditProfileOpen] = useState(false); // Edit Profile Modal
 
     // Dynamic stages
@@ -614,19 +624,72 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                     </CardContent>
                 </Card>
 
-                {/* Notes Card */}
-                {lead.notes && (
-                    <Card className="bg-amber-50/50 border-amber-200">
-                        <CardHeader className="py-3 pb-2">
-                            <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-800">
-                                <StickyNote className="w-4 h-4" /> Notes
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-xs text-amber-900/80 whitespace-pre-wrap leading-relaxed">
-                            {lead.notes}
-                        </CardContent>
-                    </Card>
-                )}
+                {/* Notes Card - Always Visible for direct editing */}
+                <Card className="bg-amber-50/50 border-amber-200">
+                    <CardHeader className="py-3 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-800">
+                            <StickyNote className="w-4 h-4" /> Notes
+                        </CardTitle>
+                        {!isEditingNotes && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-amber-800 hover:bg-amber-100 hover:text-amber-900"
+                                onClick={() => {
+                                    setTempNotes(lead.notes || '');
+                                    setIsEditingNotes(true);
+                                }}
+                            >
+                                <Pencil className="h-3 w-3" />
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent className="text-xs text-amber-900/80 leading-relaxed">
+                        {isEditingNotes ? (
+                            <div className="space-y-2">
+                                <Textarea
+                                    value={tempNotes}
+                                    onChange={(e) => setTempNotes(e.target.value)}
+                                    className="min-h-[100px] bg-white border-amber-300 focus-visible:ring-amber-400 placeholder:text-amber-300 text-amber-900"
+                                    placeholder="Add notes..."
+                                />
+                                <div className="flex gap-2 justify-end">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setIsEditingNotes(false)}
+                                        className="h-7 text-xs hover:bg-amber-100 text-amber-800"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleSaveNotes}
+                                        className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white border-none"
+                                    >
+                                        Save
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div
+                                className="whitespace-pre-wrap min-h-[20px] cursor-pointer hover:bg-amber-100/50 rounded p-1 -ml-1 transition-colors"
+                                onClick={() => {
+                                    setTempNotes(lead.notes || '');
+                                    setIsEditingNotes(true);
+                                }}
+                            >
+                                {lead.notes ? (
+                                    lead.notes
+                                ) : (
+                                    <span className="italic opacity-50 flex items-center gap-1">
+                                        <Plus className="w-3 h-3" /> Click to add notes...
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Ad Intelligence Card */}
                 {(lead.platform || lead.campaign_name || lead.ad_name || lead.form_name) && (
