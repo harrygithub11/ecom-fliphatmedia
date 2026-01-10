@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import {
     Phone, Mail, Globe, Calendar, Clock,
     MessageSquare, PhoneCall, FileText, CheckCircle2,
-    Plus, Send, Paperclip, Rocket, MapPin
+    Plus, Send, Paperclip, Rocket, MapPin, StickyNote
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
