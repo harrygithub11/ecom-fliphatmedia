@@ -180,9 +180,11 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
     if (loading) return <div className="p-10 text-center">Loading 360 View...</div>;
     if (!data) return <div className="p-10 text-center text-red-500">Lead not found.</div>;
 
-    const { profile: lead, deals, tasks, timeline, files } = data;
+    const { deals, tasks, timeline, files } = data;
 
-    // Refresh data helper
+    // Derived state
+    const lead = data?.profile;
+
     const refreshData = async () => {
         try {
             const res = await fetch(`/api/admin/leads/${params.id}`);
@@ -440,8 +442,6 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
 
     return (
         <div className="grid grid-cols-12 gap-6 h-[calc(100vh-8rem)]">
-
-            {/* LEFT COLUMN: Profile & Contact Info (3 Cols) */}
             <div className="col-span-3 flex flex-col gap-6 overflow-y-auto pr-2">
                 <Card>
                     <CardHeader className="pb-4">
