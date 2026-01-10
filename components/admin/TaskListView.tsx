@@ -70,23 +70,23 @@ const STATUS_CONFIG = {
     done: {
         label: 'COMPLETE',
         icon: CheckCircle2,
-        color: 'text-green-500',
-        bgColor: 'bg-green-500',
-        badgeClass: 'bg-green-500/20 text-green-400 border-green-500/30',
+        color: 'text-emerald-600 dark:text-emerald-400',
+        bgColor: 'bg-emerald-500',
+        badgeClass: 'bg-emerald-100/80 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 shadow-sm backdrop-blur-sm',
     },
     in_progress: {
         label: 'IN PROGRESS',
         icon: Clock,
-        color: 'text-blue-500',
+        color: 'text-blue-600 dark:text-blue-400',
         bgColor: 'bg-blue-500',
-        badgeClass: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        badgeClass: 'bg-blue-100/80 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30 shadow-sm backdrop-blur-sm',
     },
     open: {
         label: 'TO DO',
         icon: Circle,
-        color: 'text-gray-400',
-        bgColor: 'bg-gray-500',
-        badgeClass: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+        color: 'text-zinc-600 dark:text-zinc-400',
+        bgColor: 'bg-zinc-500',
+        badgeClass: 'bg-white text-zinc-700 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 shadow-sm',
     },
 };
 
@@ -141,9 +141,9 @@ function TaskRow({
                 className="flex-shrink-0"
             >
                 {task.status === 'done' ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
                 ) : (
-                    <Circle className="w-5 h-5 text-zinc-400 hover:text-green-500 transition-colors" />
+                    <Circle className="w-5 h-5 text-zinc-400 hover:text-emerald-500 transition-colors" />
                 )}
             </button>
 
