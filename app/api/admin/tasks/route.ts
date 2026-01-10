@@ -124,7 +124,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { title, customer_id, due_date, priority, assigned_to } = body;
+        const { title, customer_id, due_date, priority, assigned_to, status } = body;
 
         const { getSession } = await import('@/lib/auth');
         const session = await getSession();
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
         try {
             const [result]: any = await connection.execute(
                 'INSERT INTO tasks (title, customer_id, due_date, priority, status, created_by, assigned_to) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [title, customer_id, due_date || null, priority || 'medium', 'open', createdBy, assigned_to || null]
+                [title, customer_id, due_date || null, priority || 'medium', status || 'open', createdBy, assigned_to || null]
             );
 
             // Log Admin Activity
