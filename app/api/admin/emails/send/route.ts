@@ -4,9 +4,14 @@ import pool from '@/lib/db';
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
 
-// Reuse Redis connection for queue
-const connection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-const emailQueue = new Queue('email-queue', { connection });
+// Reuse Redis connection for queue using config object to avoid type mismatch
+const emailQueue = new Queue('email-queue', {
+    connection: {
+        host: process.env.REDIS_HOST || '127.0.0.1',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD
+    }
+});
 
 export async function POST(req: NextRequest) {
     try {
