@@ -13,13 +13,6 @@ import path from 'path';
 // Load env specific to where this script is running
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-// DB Pool Init
-const pool = mysql.createPool({
-    uri: process.env.DATABASE_URL,
-    connectionLimit: 10,
-    charset: 'utf8mb4' // Ensure emojis work
-});
-
 // Redis Connection
 const redisConnection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null
@@ -39,9 +32,16 @@ const worker = new Worker('email-send-queue', async (job: Job<EmailJobData>) => 
     let email: any = null;
     let account: any = null;
 
-    // STEP 1: Fetch Data (Quick DB Access)
-    const dbRead = await pool.getConnection();
+    // Helper for fresh connections (Avoids pool timeouts during long SMTP calls)
+    const connectDB = async () => mysql.createConnection({
+        uri: process.env.DATABASE_URL,
+        charset: 'utf8mb4' // CRITICAL: Support emojis
+    });
+
+    // STEP 1: Fetch Data
+    let dbRead;
     try {
+        dbRead = await connectDB();
         const [emailRows]: any = await dbRead.execute('SELECT * FROM emails WHERE id = ?', [emailId]);
         const [accountRows]: any = await dbRead.execute('SELECT * FROM smtp_accounts WHERE id = ?', [smtpAccountId]);
 
@@ -51,11 +51,11 @@ const worker = new Worker('email-send-queue', async (job: Job<EmailJobData>) => 
         email = emailRows[0];
         account = accountRows[0];
     } finally {
-        dbRead.release(); // RELEASE IMMEDIATELY
+        if (dbRead) await dbRead.end();
     }
 
     try {
-        // STEP 2: Decrypt (CPU only)
+        // STEP 2: Decrypt
         let password;
         try {
             password = decrypt(account.encrypted_password);
@@ -75,7 +75,7 @@ const worker = new Worker('email-send-queue', async (job: Job<EmailJobData>) => 
             }
         });
 
-        // STEP 4: Send Mail (SLOW NETWORK CALL - NO DB CONNECTION HELD)
+        // STEP 4: Send Mail (SLOW NETWORK CALL)
         let toAddresses = [];
         try {
             const rawTo = typeof email.recipient_to === 'string' ? JSON.parse(email.recipient_to) : email.recipient_to;
@@ -96,29 +96,32 @@ const worker = new Worker('email-send-queue', async (job: Job<EmailJobData>) => 
 
         console.log(`✅ Email Sent: ${info.messageId}`);
 
-        // STEP 5: Update Status (Quick DB Access)
-        const dbWrite = await pool.getConnection();
+        // STEP 5: Update Status
+        let dbWrite;
         try {
+            dbWrite = await connectDB();
             await dbWrite.execute(
                 'UPDATE emails SET status = ?, sent_at = NOW(), headers_json = ? WHERE id = ?',
                 ['sent', JSON.stringify(info), emailId]
             );
 
+            // FIX: Ensure 4 placeholders match 4 params (finished_at uses NOW())
+            // OR 5 placeholders for 5 params. We use 5 here to be explicit.
             await dbWrite.execute(
-                'INSERT INTO email_send_jobs (email_id, status, attempt_count, finished_at) VALUES (?, ?, ?, NOW())',
-                [emailId, 'completed', job.attemptsMade, new Date()]
+                'INSERT INTO email_send_jobs (email_id, status, attempt_count, finished_at) VALUES (?, ?, ?, ?)',
+                [emailId, 'completed', job.attemptsMade || 0, new Date()]
             );
         } finally {
-            dbWrite.release();
+            if (dbWrite) await dbWrite.end();
         }
 
     } catch (error: any) {
         console.error(`❌ Job ${job.id} Failed:`, error.message);
 
-        // Fail Logic (Fresh Connection)
-        const dbFail = await pool.getConnection();
+        // Fail Logic
+        let dbFail;
         try {
-            // Truncate error if too long for DB
+            dbFail = await connectDB();
             const errorMsg = error.message ? error.message.substring(0, 500) : 'Unknown Error';
 
             await dbFail.execute(
@@ -126,8 +129,9 @@ const worker = new Worker('email-send-queue', async (job: Job<EmailJobData>) => 
                 ['failed', errorMsg, emailId]
             );
 
+            // FIX: Match placeholders to params
             await dbFail.execute(
-                'INSERT INTO email_send_jobs (email_id, status, attempt_count, last_error, finished_at) VALUES (?, ?, ?, ?, NOW())',
+                'INSERT INTO email_send_jobs (email_id, status, attempt_count, last_error, finished_at) VALUES (?, ?, ?, ?, ?)',
                 [
                     emailId || 0,
                     'failed',
@@ -139,22 +143,21 @@ const worker = new Worker('email-send-queue', async (job: Job<EmailJobData>) => 
         } catch (dbError) {
             console.error('Failed to log error to DB:', dbError);
         } finally {
-            dbFail.release();
+            if (dbFail) await dbFail.end();
         }
 
-        // IMPORTANT: If we successfully sent the email but failed to update status, we DO NOT want to retry (eternal loop)
-        // If the error was "Malform packet" (DB error) AFTER send, we should choke the error to stop retry.
-        if (error.message.includes('Malformed') || error.message.includes('Packet')) {
-            console.error('🛑 Swallowing DB Error to prevent infinite retry loop because email was likely sent.');
-            return; // MARK JOB AS DONE (even if DB update failed)
+        // Prevent infinite retry for "Malformed Packet"
+        if (error.message.includes('Malformed') || error.message.includes('Packet') || error.message.includes('Connection lost')) {
+            console.error('🛑 Swallowing DB/Network Error to prevent retry loop.');
+            return;
         }
 
-        throw error; // Rethrow for BullMQ
+        throw error;
     }
 
 }, {
     connection: redisConnection as any,
-    concurrency: 5 // Process 5 jobs at once
+    concurrency: 5
 });
 
 worker.on('completed', job => {
