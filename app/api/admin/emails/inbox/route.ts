@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         }
 
         query += `
-                GROUP BY thread_id
+                GROUP BY COALESCE(thread_id, CAST(id AS CHAR))
             ) t ON e.id = t.last_id
             LEFT JOIN customers c ON e.customer_id = c.id
             LEFT JOIN smtp_accounts sa ON e.smtp_account_id = sa.id
