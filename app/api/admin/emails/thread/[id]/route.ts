@@ -12,8 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         const [rows]: any = await pool.execute(`
             SELECT 
                 e.*,
-                c.name as customer_name,
-                c.avatar_url
+                c.name as customer_name
             FROM emails e
             LEFT JOIN customers c ON e.customer_id = c.id
             WHERE e.thread_id = ?

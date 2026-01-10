@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
                 e.id, e.subject, e.body_text, e.received_at, e.created_at, e.is_read,
                 e.from_name, e.from_address, e.folder, e.direction, e.recipient_to, e.thread_id,
                 (SELECT COUNT(*) FROM emails WHERE thread_id = e.thread_id) as thread_count,
-                c.id as customer_id, c.name as customer_name, c.email as customer_email, c.avatar_url,
+                c.id as customer_id, c.name as customer_name, c.email as customer_email,
                 sa.from_email as account_email
             FROM emails e
             INNER JOIN (
