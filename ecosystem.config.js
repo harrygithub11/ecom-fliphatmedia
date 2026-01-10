@@ -12,7 +12,7 @@ module.exports = {
         {
             name: 'newyearlp-worker',
             script: 'npx',
-            args: 'ts-node --project tsconfig.worker.json workers/email-worker.ts',
+            args: 'tsx workers/email-worker.ts',
             instances: 1,
             autorestart: true,
             watch: false,
@@ -21,7 +21,7 @@ module.exports = {
         {
             name: 'newyearlp-imap',
             script: 'npx',
-            args: 'ts-node --project tsconfig.worker.json workers/imap-sync.ts',
+            args: 'tsx workers/imap-sync.ts',
             instances: 1,
             autorestart: true,
             watch: false,
