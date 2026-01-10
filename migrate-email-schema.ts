@@ -71,6 +71,21 @@ async function migrate() {
             }
         }
 
+        // 4. Add recipient_to (JSON field for multiple recipients)
+        try {
+            await connection.execute(`
+                ALTER TABLE emails
+                ADD COLUMN recipient_to JSON NULL AFTER direction;
+            `);
+            console.log("SUCCESS: Added recipient_to column.");
+        } catch (e: any) {
+            if (e.code === 'ER_DUP_FIELDNAME') {
+                console.log("Column recipient_to already exists.");
+            } else {
+                console.error("recipient_to Error:", e.message);
+            }
+        }
+
     } catch (e: any) {
         console.error("Database Connection/Migration Failed:", e.message);
     } finally {
