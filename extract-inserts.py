@@ -9,13 +9,18 @@ with open('newyear (3).sql', 'r', encoding='utf-8') as f:
 insert_pattern = r'INSERT INTO[^;]+;'
 inserts = re.findall(insert_pattern, content, re.DOTALL | re.MULTILINE)
 
-# Tables to skip (have parsing issues or are non-critical)
-skip_tables = ['admin_login_logs']
+# Tables to skip (have parsing issues with complex data or are non-critical)
+skip_tables = [
+    'admin_login_logs',   # malformed user-agent strings
+    'emails',             # complex JSON with escaped quotes
+    'email_send_jobs',    # related to emails
+]
 
 # Write to new file with INSERT IGNORE to skip duplicates
 with open('seed-data-only.sql', 'w', encoding='utf-8') as f:
     f.write('-- Data-only seed file (INSERT IGNORE to skip duplicates)\n')
-    f.write('-- Generated from newyear (3).sql\n\n')
+    f.write('-- Generated from newyear (3).sql\n')
+    f.write('-- Skipped tables: ' + ', '.join(skip_tables) + '\n\n')
     skipped = 0
     for insert in inserts:
         # Check if this insert is for a table we should skip
