@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const folder = searchParams.get('folder') || 'INBOX'; // INBOX, SENT, TRASH, SPAM
         const limit = parseInt(searchParams.get('limit') || '50');
-        const search = searchParams.get('search') || '';
+        const accountId = searchParams.get('accountId');
 
         let query = `
             SELECT 
@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
                 e.from_address,
                 e.folder,
                 e.direction,
+                e.recipient_to,
                 
                 c.id as customer_id,
                 c.name as customer_name,
@@ -37,6 +38,12 @@ export async function GET(req: NextRequest) {
         `;
 
         const params: any[] = [];
+
+        // Account Filter
+        if (accountId && accountId !== 'all') {
+            query += ` AND e.smtp_account_id = ? `;
+            params.push(accountId);
+        }
 
         // Folder Filter
         if (folder === 'SENT') {
