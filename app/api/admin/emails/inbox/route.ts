@@ -12,14 +12,14 @@ export async function GET(req: NextRequest) {
         const accountId = searchParams.get('accountId');
         const search = searchParams.get('search') || '';
 
-        // Threaded Query: Pick the latest email from each thread
+        // Debug logging for server console
+        console.log(`[Inbox API] Fetching folder: ${folder}, Account: ${accountId}, Search: ${search}`);
+
         let query = `
             SELECT 
                 e.id, e.subject, e.body_text, e.received_at, e.created_at, e.is_read,
                 e.from_name, e.from_address, e.folder, e.direction, e.recipient_to, e.thread_id,
-                
                 (SELECT COUNT(*) FROM emails WHERE thread_id = e.thread_id) as thread_count,
-                
                 c.id as customer_id, c.name as customer_name, c.email as customer_email, c.avatar_url,
                 sa.from_email as account_email
             FROM emails e
@@ -40,11 +40,11 @@ export async function GET(req: NextRequest) {
 
         if (accountId && accountId !== 'all') {
             query += ` AND smtp_account_id = ? `;
-            params.push(accountId);
+            params.push(parseInt(accountId));
         }
 
         query += `
-                GROUP BY COALESCE(thread_id, CAST(id AS CHAR))
+                GROUP BY COALESCE(thread_id, CONCAT('single_', id))
             ) t ON e.id = t.last_id
             LEFT JOIN customers c ON e.customer_id = c.id
             LEFT JOIN smtp_accounts sa ON e.smtp_account_id = sa.id
@@ -60,9 +60,14 @@ export async function GET(req: NextRequest) {
         query += ` ORDER BY e.received_at DESC, e.created_at DESC LIMIT ?`;
         params.push(limit);
 
+        console.log(`[Inbox API] Executing Query: ${query.substring(0, 100)}...`);
+        console.log(`[Inbox API] Params:`, params);
+
         const [rows]: any = await pool.execute(query, params);
 
-        return NextResponse.json({ success: true, emails: rows });
+        console.log(`[Inbox API] Returned ${rows.length} rows`);
+
+        return NextResponse.json({ success: true, emails: rows, count: rows.length });
     } catch (error: any) {
         console.error('Fetch Inbox Error:', error);
         return NextResponse.json({ success: false, message: error.message }, { status: 500 });

@@ -86,13 +86,27 @@ export function InboxView() {
                 folder: selectedFolder,
                 accountId: selectedAccountId
             });
+            console.log(`[InboxView] Fetching: /api/admin/emails/inbox?${params}`);
             const res = await fetch(`/api/admin/emails/inbox?${params}`);
             const data = await res.json();
+
             if (data.success) {
-                setEmails(data.emails);
+                console.log(`[InboxView] Received ${data.emails?.length} emails`);
+                setEmails(data.emails || []);
+            } else {
+                toast({
+                    title: 'Sync Issue',
+                    description: data.message || 'Failed to fetch messages',
+                    variant: 'destructive'
+                });
             }
         } catch (error) {
             console.error('Failed to fetch inbox', error);
+            toast({
+                title: 'Connection Error',
+                description: 'Failed to sync with the server. Please try again.',
+                variant: 'destructive'
+            });
         } finally {
             setLoading(false);
             setRefreshing(false);
