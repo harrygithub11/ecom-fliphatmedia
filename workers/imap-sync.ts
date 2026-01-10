@@ -74,20 +74,23 @@ async function syncAccount(account: any) {
             if (messagesToFetch && messagesToFetch.length > 0) {
                 console.log(`Found ${messagesToFetch.length} unread messages.`);
 
+                db = await connectDB();
+
                 // Fetch using the list of sequence numbers we just found
                 for await (const message of client.fetch(messagesToFetch, { source: true, envelope: true, uid: true })) {
                     if (!message.source) continue;
 
-                    const parsed = await simpleParser(message.source);
-                    const db = await connectDB();
-
                     try {
+                        const parsed = await simpleParser(message.source);
+
                         // Check if email already exists (by messageId)
                         const messageId = parsed.messageId || `no-id-${Date.now()}`;
                         const [existing]: any = await db.execute('SELECT id FROM emails WHERE message_id = ?', [messageId]);
 
                         if (existing.length > 0) {
-                            // Already exists, skip
+                            // Already exists, just mark as seen on server so we don't fetch again
+                            console.log(`Skipping duplicate: ${messageId}`);
+                            await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });
                             continue;
                         }
 
@@ -131,56 +134,58 @@ async function syncAccount(account: any) {
                             JSON.stringify(parsed.headers),
                             recipientToJson
                         ]);
-                    } finally {
-                        await db.end();
+
+                        // SUCCESS! Now mark as seen on IMAP server
+                        await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });
+
+                    } catch (err) {
+                        console.error(`Failed to process message ${message.seq}:`, err);
+                        // Do NOT mark as seen, so it tries again next time
                     }
                 }
             } else {
                 console.log("No unread messages found.");
             }
+
+            await client.logout();
+
+            // Update last synced
+            db = await connectDB();
+            await db.execute('UPDATE smtp_accounts SET last_synced_at = NOW() WHERE id = ?', [account.id]);
+
+        } catch (e: any) {
+            console.error(`Error syncing ${account.from_email}:`, e);
+            if (e.command) console.error("Failed Command:", e.command);
+            if (e.response) console.error("Server Response:", e.response);
         } finally {
-            lock.release();
+            if (db) await db.end();
+            if (client) client.close();
         }
-
-        await client.logout();
-
-        // Update last synced
-        db = await connectDB();
-        await db.execute('UPDATE smtp_accounts SET last_synced_at = NOW() WHERE id = ?', [account.id]);
-
-    } catch (e: any) {
-        console.error(`Error syncing ${account.from_email}:`, e);
-        if (e.command) console.error("Failed Command:", e.command);
-        if (e.response) console.error("Server Response:", e.response);
-    } finally {
-        if (db) await db.end();
-        if (client) client.close();
     }
-}
 
 async function runSync() {
-    console.log("Starting Sync Poll...");
-    let db;
-    try {
-        db = await connectDB();
-        const [accounts]: any = await db.execute(
-            'SELECT * FROM smtp_accounts WHERE is_active = 1 AND imap_host IS NOT NULL'
-        );
+        console.log("Starting Sync Poll...");
+        let db;
+        try {
+            db = await connectDB();
+            const [accounts]: any = await db.execute(
+                'SELECT * FROM smtp_accounts WHERE is_active = 1 AND imap_host IS NOT NULL'
+            );
 
-        console.log(`Found ${accounts.length} accounts to sync.`);
+            console.log(`Found ${accounts.length} accounts to sync.`);
 
-        for (const account of accounts) {
-            await syncAccount(account);
+            for (const account of accounts) {
+                await syncAccount(account);
+            }
+
+        } catch (e) {
+            console.error("Sync Loop Error:", e);
+        } finally {
+            if (db) await db.end();
         }
 
-    } catch (e) {
-        console.error("Sync Loop Error:", e);
-    } finally {
-        if (db) await db.end();
+        console.log(`Sync finished. Sleeping for ${SYNC_INTERVAL_MS / 1000}s...`);
+        setTimeout(runSync, SYNC_INTERVAL_MS);
     }
 
-    console.log(`Sync finished. Sleeping for ${SYNC_INTERVAL_MS / 1000}s...`);
-    setTimeout(runSync, SYNC_INTERVAL_MS);
-}
-
-runSync();
+    runSync();
