@@ -28,8 +28,9 @@ export async function GET() {
         } finally {
             connection.release();
         }
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
+    } catch (error: any) {
+        console.error("Fetch Leads Error:", error);
+        return NextResponse.json({ error: 'Failed to fetch leads', details: error.message }, { status: 500 });
     }
 }
 

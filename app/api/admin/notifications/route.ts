@@ -46,9 +46,9 @@ export async function GET() {
             unreadNotifications: notifications.length
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching notifications:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
 }
 
