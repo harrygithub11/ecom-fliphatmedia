@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ComposeModal } from './ComposeModal';
-import { Mail, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Mail, CheckCircle2, XCircle, Clock, AlertTriangle, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export function EmailsTab() {
@@ -13,6 +15,7 @@ export function EmailsTab() {
     const [loading, setLoading] = useState(true);
     const [composeOpen, setComposeOpen] = useState(false);
     const [filterStatus, setFilterStatus] = useState<string | null>(null);
+    const [viewingEmail, setViewingEmail] = useState<any | null>(null);
 
     useEffect(() => {
         fetchEmails();
@@ -115,8 +118,13 @@ export function EmailsTab() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="text-xs text-zinc-400">
-                                        {formatDistanceToNow(new Date(email.created_at), { addSuffix: true })}
+                                    <div className="flex items-start gap-4">
+                                        <div className="text-xs text-zinc-400">
+                                            {formatDistanceToNow(new Date(email.created_at), { addSuffix: true })}
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewingEmail(email)}>
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
                                     </div>
                                 </div>
                             ))}
@@ -124,6 +132,21 @@ export function EmailsTab() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Email View Dialog */}
+            <Dialog open={!!viewingEmail} onOpenChange={(open) => !open && setViewingEmail(null)}>
+                <DialogContent className="sm:max-w-[700px]">
+                    <DialogHeader>
+                        <DialogTitle>{viewingEmail?.subject || '(No Subject)'}</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[500px] mt-4 p-4 border rounded-md">
+                        <div
+                            className="prose prose-sm dark:prose-invert"
+                            dangerouslySetInnerHTML={{ __html: viewingEmail?.body_html || viewingEmail?.body_text?.replace(/\n/g, '<br/>') || 'No content' }}
+                        />
+                    </ScrollArea>
+                </DialogContent>
+            </Dialog>
 
             <ComposeModal
                 open={composeOpen}

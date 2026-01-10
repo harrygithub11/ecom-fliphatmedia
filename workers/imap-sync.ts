@@ -108,12 +108,31 @@ async function syncAccount(account: any) {
 
                         console.log(`Creating email from ${fromAddress} - ${parsed.subject}`);
 
+                        // 1. Threading Logic
+                        let threadId = `thread_${messageId}`; // Default
+                        const inReplyTo = parsed.inReplyTo || '';
+
+                        if (inReplyTo) {
+                            const [parent]: any = await db.execute('SELECT thread_id FROM emails WHERE message_id = ?', [inReplyTo]);
+                            if (parent.length > 0) threadId = parent[0].thread_id;
+                        } else {
+                            // Match by subject (Re: ...) and Customer
+                            const cleanSubject = (parsed.subject || '').replace(/^Re:\s+/i, '').trim();
+                            if (cleanSubject && customerId) {
+                                const [match]: any = await db.execute(
+                                    'SELECT thread_id FROM emails WHERE customer_id = ? AND (subject LIKE ? OR subject = ?) ORDER BY created_at DESC LIMIT 1',
+                                    [customerId, `Re: ${cleanSubject}`, cleanSubject]
+                                );
+                                if (match.length > 0) threadId = match[0].thread_id;
+                            }
+                        }
+
                         await db.execute(`
                             INSERT INTO emails (
                                 smtp_account_id, customer_id, direction, folder, status, is_read,
                                 from_address, from_name, subject, body_html, body_text, 
-                                received_at, message_id, headers_json, recipient_to
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)
+                                received_at, message_id, in_reply_to, thread_id, headers_json, recipient_to
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
                         `, [
                             account.id,
                             customerId,
@@ -127,9 +146,22 @@ async function syncAccount(account: any) {
                             parsed.html || '',
                             parsed.text || '',
                             messageId,
+                            inReplyTo,
+                            threadId,
                             JSON.stringify(parsed.headers),
                             recipientToJson
                         ]);
+
+                        // 3. Log as Interaction (for Global Activity/Timeline)
+                        if (customerId) {
+                            await db.execute(`
+                                INSERT INTO interactions (customer_id, type, content, created_at, created_by)
+                                VALUES (?, 'email_inbound', ?, NOW(), NULL)
+                            `, [
+                                customerId,
+                                `Email Received: ${parsed.subject?.substring(0, 100)}`
+                            ]);
+                        }
 
                         // SUCCESS! Mark as seen
                         await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });

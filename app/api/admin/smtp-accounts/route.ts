@@ -5,7 +5,12 @@ import { encrypt } from '@/lib/smtp-encrypt';
 
 export async function GET() {
     try {
-        const [rows] = await pool.execute('SELECT * FROM smtp_accounts ORDER BY id DESC');
+        const [rows] = await pool.execute(`
+            SELECT sa.*,
+                   (SELECT COUNT(*) FROM emails WHERE smtp_account_id = sa.id AND folder = 'INBOX' AND is_read = 0) as unread_count
+            FROM smtp_accounts sa
+            ORDER BY sa.id DESC
+        `);
         return NextResponse.json({ success: true, accounts: rows });
     } catch (error: any) {
         return NextResponse.json({ success: false, message: error.message }, { status: 500 });

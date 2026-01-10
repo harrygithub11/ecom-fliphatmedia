@@ -12,49 +12,45 @@ export async function GET(req: NextRequest) {
         const accountId = searchParams.get('accountId');
         const search = searchParams.get('search') || '';
 
+        // Threaded Query: Pick the latest email from each thread
         let query = `
             SELECT 
-                e.id,
-                e.subject,
-                e.body_text,
-                e.received_at,
-                e.created_at,
-                e.is_read,
-                e.from_name,
-                e.from_address,
-                e.folder,
-                e.direction,
-                e.recipient_to,
+                e.id, e.subject, e.body_text, e.received_at, e.created_at, e.is_read,
+                e.from_name, e.from_address, e.folder, e.direction, e.recipient_to, e.thread_id,
                 
-                c.id as customer_id,
-                c.name as customer_name,
-                c.email as customer_email,
-                c.avatar_url,
-
+                (SELECT COUNT(*) FROM emails WHERE thread_id = e.thread_id) as thread_count,
+                
+                c.id as customer_id, c.name as customer_name, c.email as customer_email, c.avatar_url,
                 sa.from_email as account_email
             FROM emails e
+            INNER JOIN (
+                SELECT MAX(id) as last_id
+                FROM emails
+                WHERE 1=1
+        `;
+
+        const params: any[] = [];
+
+        if (folder === 'SENT') {
+            query += ` AND direction = 'outbound' `;
+        } else {
+            query += ` AND folder = ? `;
+            params.push(folder);
+        }
+
+        if (accountId && accountId !== 'all') {
+            query += ` AND smtp_account_id = ? `;
+            params.push(accountId);
+        }
+
+        query += `
+                GROUP BY thread_id
+            ) t ON e.id = t.last_id
             LEFT JOIN customers c ON e.customer_id = c.id
             LEFT JOIN smtp_accounts sa ON e.smtp_account_id = sa.id
             WHERE 1=1
         `;
 
-        const params: any[] = [];
-
-        // Account Filter
-        if (accountId && accountId !== 'all') {
-            query += ` AND e.smtp_account_id = ? `;
-            params.push(accountId);
-        }
-
-        // Folder Filter
-        if (folder === 'SENT') {
-            query += ` AND e.direction = 'outbound' `;
-        } else {
-            query += ` AND e.folder = ? `;
-            params.push(folder);
-        }
-
-        // Search Filter
         if (search) {
             query += ` AND (e.subject LIKE ? OR e.from_name LIKE ? OR e.from_address LIKE ? OR c.name LIKE ?) `;
             const term = `%${search}%`;

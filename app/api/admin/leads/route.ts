@@ -48,7 +48,22 @@ export async function POST(request: Request) {
                 'INSERT INTO customers (name, email, phone, source, location, budget, notes, platform, campaign_name, ad_name, stage, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [name, email, phone || '', source || 'Manual', location || '', budget || 0, notes || '', platform || '', campaign_name || '', ad_name || '', 'new', 'cold']
             );
-            return NextResponse.json({ success: true, id: result.insertId });
+            const leadId = result.insertId;
+
+            // Log Interaction
+            try {
+                const { getSession } = await import('@/lib/auth');
+                const session = await getSession();
+                const adminId = session?.id || null;
+                await connection.execute(
+                    'INSERT INTO interactions (customer_id, type, content, created_by, created_at) VALUES (?, ?, ?, ?, NOW())',
+                    [leadId, 'lead_created', `Lead created manually: ${name} (${email})`, adminId]
+                );
+            } catch (e) {
+                console.error("Failed to log lead creation interaction:", e);
+            }
+
+            return NextResponse.json({ success: true, id: leadId });
         } finally {
             connection.release();
         }
