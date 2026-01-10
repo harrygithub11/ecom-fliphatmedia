@@ -5,14 +5,21 @@ export async function GET(request: Request, { params }: { params: { id: string }
     try {
         const id = params.id;
         const connection = await pool.getConnection();
-
         try {
+            // Mark as read for current admin (Hardcoded ID 1 for now, waiting for auth context)
+            await connection.execute(
+                `INSERT INTO lead_reads (admin_id, lead_id, last_read_at) 
+                 VALUES (?, ?, NOW()) 
+                 ON DUPLICATE KEY UPDATE last_read_at = NOW()`,
+                [1, params.id]
+            );
+
             // 1. Fetch Customer Profile
-            const [rows]: any = await connection.execute('SELECT * FROM customers WHERE id = ?', [id]);
-            if (rows.length === 0) {
+            const [profileRows]: any = await connection.execute('SELECT * FROM customers WHERE id = ?', [id]);
+            if (profileRows.length === 0) {
                 return NextResponse.json({ success: false, message: 'Lead not found' }, { status: 404 });
             }
-            const customer = rows[0];
+            const customer = profileRows[0];
 
             // 2. Fetch Deals (Orders)
             const [deals]: any = await connection.execute(

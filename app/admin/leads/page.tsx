@@ -35,6 +35,8 @@ interface Customer {
     order_status?: string;
     order_source?: string;
     campaign_name?: string;
+    total_activities?: number;
+    new_activity_count?: number;
 }
 
 export default function LeadsPage() {
@@ -368,6 +370,7 @@ export default function LeadsPage() {
                                 <TableHead>Stage</TableHead>
                                 <TableHead>Order Status</TableHead>
                                 <TableHead>Owner</TableHead>
+                                <TableHead>Activity</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -498,6 +501,18 @@ export default function LeadsPage() {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800">
+                                                    {lead.total_activities || 0}
+                                                </Badge>
+                                                {(lead.new_activity_count || 0) > 0 && (
+                                                    <Badge className="bg-blue-500 hover:bg-blue-600">
+                                                        +{lead.new_activity_count} New
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>

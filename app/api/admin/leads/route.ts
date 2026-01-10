@@ -11,16 +11,19 @@ export async function GET() {
             const [rows]: any = await connection.execute(`
                 SELECT 
                     c.*,
-                    COUNT(o.id) as total_orders,
-                    MAX(o.created_at) as last_order_date,
+                    COUNT(DISTINCT o.id) as total_orders,
                     MAX(o.created_at) as last_order_date,
                     (SELECT status FROM orders WHERE customer_id = c.id ORDER BY created_at DESC LIMIT 1) as order_status,
-                    (SELECT source FROM orders WHERE customer_id = c.id ORDER BY created_at DESC LIMIT 1) as order_source
+                    (SELECT source FROM orders WHERE customer_id = c.id ORDER BY created_at DESC LIMIT 1) as order_source,
+                    (SELECT COUNT(*) FROM interactions WHERE customer_id = c.id) as total_activities,
+                    (SELECT COUNT(*) FROM interactions 
+                     WHERE customer_id = c.id 
+                     AND created_at > COALESCE((SELECT last_read_at FROM lead_reads WHERE lead_id = c.id AND admin_id = ?), '1970-01-01')) as new_activity_count
                 FROM customers c
                 LEFT JOIN orders o ON c.id = o.customer_id
                 GROUP BY c.id
                 ORDER BY c.created_at DESC
-            `);
+            `, [1]); // TODO: Use actual current user ID from session/auth
             return NextResponse.json(rows);
         } finally {
             connection.release();
