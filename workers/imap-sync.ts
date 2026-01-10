@@ -162,30 +162,31 @@ async function syncAccount(account: any) {
             if (client) client.close();
         }
     }
+}
 
 async function runSync() {
-        console.log("Starting Sync Poll...");
-        let db;
-        try {
-            db = await connectDB();
-            const [accounts]: any = await db.execute(
-                'SELECT * FROM smtp_accounts WHERE is_active = 1 AND imap_host IS NOT NULL'
-            );
+    console.log("Starting Sync Poll...");
+    let db;
+    try {
+        db = await connectDB();
+        const [accounts]: any = await db.execute(
+            'SELECT * FROM smtp_accounts WHERE is_active = 1 AND imap_host IS NOT NULL'
+        );
 
-            console.log(`Found ${accounts.length} accounts to sync.`);
+        console.log(`Found ${accounts.length} accounts to sync.`);
 
-            for (const account of accounts) {
-                await syncAccount(account);
-            }
-
-        } catch (e) {
-            console.error("Sync Loop Error:", e);
-        } finally {
-            if (db) await db.end();
+        for (const account of accounts) {
+            await syncAccount(account);
         }
 
-        console.log(`Sync finished. Sleeping for ${SYNC_INTERVAL_MS / 1000}s...`);
-        setTimeout(runSync, SYNC_INTERVAL_MS);
+    } catch (e) {
+        console.error("Sync Loop Error:", e);
+    } finally {
+        if (db) await db.end();
     }
 
-    runSync();
+    console.log(`Sync finished. Sleeping for ${SYNC_INTERVAL_MS / 1000}s...`);
+    setTimeout(runSync, SYNC_INTERVAL_MS);
+}
+
+runSync();
