@@ -13,6 +13,10 @@ model Admin {
   email         String    @unique
   password_hash String
   role          AdminRole @default(super_admin)
+  avatar_url    String?   @db.VarChar(255)
+  phone         String?   @db.VarChar(20)
+  language      String?   @default("en") @db.VarChar(10)
+  timezone      String?   @default("UTC") @db.VarChar(50)
   last_login    DateTime? @db.Timestamp(0)
   created_at    DateTime? @default(now()) @db.Timestamp(0)
 
@@ -35,6 +39,24 @@ model Customer {
   stage        CustomerStage @default(new)
   tags         Json?
   owner        String?       @default("unassigned")
+  location     String?       @db.VarChar(255)
+  
+  // Facebook Lead Gen fields
+  ad_id           String? @db.VarChar(191)
+  ad_name         String? @db.VarChar(191)
+  adset_id        String? @db.VarChar(191)
+  adset_name      String? @db.VarChar(191)
+  campaign_id     String? @db.VarChar(191)
+  campaign_name   String? @db.VarChar(191)
+  form_id         String? @db.VarChar(191)
+  form_name       String? @db.VarChar(191)
+  fb_lead_id      String? @db.VarChar(191)
+  fb_lead_status  String? @db.VarChar(191)
+  fb_created_time String? @db.VarChar(191)
+  is_organic      Boolean @default(false)
+  platform        String? @db.VarChar(191)
+  budget          Decimal? @db.Decimal(10, 2)
+
   created_at   DateTime?     @default(now()) @db.Timestamp(0)
   updated_at   DateTime?     @default(now()) @updatedAt @db.Timestamp(0)
 
@@ -61,6 +83,7 @@ model Order {
   invoice_url         String?         @db.VarChar(500)
   proposal_status     ProposalStatus  @default(draft)
   payment_mode        String?
+  onboarding_status   OnboardingStatus @default(pending)
   due_date            DateTime?       @db.DateTime(0)
   created_at          DateTime?       @default(now()) @db.Timestamp(0)
   updated_at          DateTime?       @default(now()) @updatedAt @db.Timestamp(0)
@@ -71,6 +94,11 @@ model Order {
   tasks               Task[]
 
   @@map("orders")
+}
+
+enum OnboardingStatus {
+  pending
+  completed
 }
 
 model ProjectSubmission {
@@ -112,7 +140,12 @@ model Task {
   due_date         DateTime?    @db.Timestamp(0)
   status           TaskStatus   @default(open)
   priority         TaskPriority @default(medium)
-  created_at       DateTime?    @default(now()) @db.Timestamp(0)
+  
+  created_by        Int?
+  status_changed_at DateTime?   @db.Timestamp(0)
+  status_changed_by Int?
+  updated_at        DateTime?   @default(now()) @updatedAt @db.Timestamp(0)
+  created_at        DateTime?   @default(now()) @db.Timestamp(0)
 
   customer         Customer?    @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   order            Order?       @relation(fields: [related_order_id], references: [id])
@@ -180,9 +213,12 @@ enum CustomerStage {
   negotiation
   won
   lost
+  follow_up_required
+  follow_up_done
 }
 
 enum OrderStatus {
+  new_lead
   initiated
   payment_failed
   paid
@@ -576,4 +612,122 @@ model webhook {
   @@index([accountId])
   @@index([enabled])
   @@map("webhook")
+}
+
+model LandingPage {
+  id           Int       @id @default(autoincrement())
+  slug         String    @unique @db.VarChar(255)
+  name         String    @db.VarChar(255)
+  is_active    Boolean?  @default(true)
+  content      Json?     @db.Json
+  page_views   Int?      @default(0)
+  conversions  Int?      @default(0)
+  created_at   DateTime? @default(now()) @db.DateTime(0)
+  updated_at   DateTime? @default(now()) @updatedAt @db.DateTime(0)
+
+  @@map("landing_pages")
+}
+
+model LeadStage {
+  id            Int      @id @default(autoincrement())
+  value         String   @unique @db.VarChar(50)
+  label         String   @db.VarChar(100)
+  color         String?  @default("gray") @db.VarChar(50)
+  display_order Int?     @default(0)
+  is_active     Boolean? @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamp(0)
+
+  @@map("lead_stages")
+}
+
+model LeadScore {
+  id            Int      @id @default(autoincrement())
+  value         String   @unique @db.VarChar(50)
+  label         String   @db.VarChar(100)
+  color         String?  @default("gray") @db.VarChar(50)
+  emoji         String?  @db.VarChar(10)
+  display_order Int?     @default(0)
+  is_active     Boolean? @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamp(0)
+
+  @@map("lead_scores")
+}
+
+model SiteSetting {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique @db.VarChar(191)
+  value      String?   @db.LongText
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@map("site_settings")
+}
+
+model LeadRead {
+  id           Int      @id @default(autoincrement())
+  admin_id     Int
+  lead_id      Int
+  last_read_at DateTime? @default(now()) @db.Timestamp(0)
+
+  @@map("lead_reads")
+}
+
+model AdminActivityLogOld {
+  id         Int      @id @default(autoincrement())
+  admin_id   Int?
+  action     String   @db.VarChar(100)
+  details    String?  @db.Text
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+
+  @@map("admin_activity_log")
+}
+
+model Setting {
+  id    Int     @id @default(autoincrement())
+  key   String  @unique @db.VarChar(191)
+  value String? @db.LongText
+
+  @@map("settings")
+}
+
+model SmtpAccountOld {
+  id                      Int       @id @default(autoincrement())
+  user_id                 Int?
+  provider                String    @db.VarChar(50)
+  smtp_host               String?    @db.VarChar(255)
+  smtp_port               Int?
+  smtp_secure             Boolean?   @default(true)
+  username                String    @db.VarChar(255)
+  encrypted_password      String    @db.Text
+  imap_host               String?    @db.VarChar(255)
+  imap_port               Int?
+  imap_secure             Boolean?   @default(true)
+  imap_encrypted_password String?    @db.Text
+  from_email              String    @db.VarChar(255)
+  from_name               String    @db.VarChar(255)
+  is_active               Boolean?   @default(true)
+  created_at              DateTime? @default(now()) @db.DateTime(0)
+
+  @@map("smtp_accounts")
+}
+
+model TaskComment {
+  id         Int       @id @default(autoincrement())
+  task_id    Int
+  admin_id   Int
+  comment    String    @db.Text
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+
+  @@map("task_comments")
+}
+
+model TaskHistory {
+  id         Int       @id @default(autoincrement())
+  task_id    Int
+  admin_id   Int
+  action     String    @db.VarChar(100)
+  details    String?   @db.Text
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+
+  @@map("task_history")
 }
