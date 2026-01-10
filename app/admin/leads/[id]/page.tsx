@@ -614,6 +614,20 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                     </CardContent>
                 </Card>
 
+                {/* Notes Card */}
+                {lead.notes && (
+                    <Card className="bg-amber-50/50 border-amber-200">
+                        <CardHeader className="py-3 pb-2">
+                            <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-800">
+                                <StickyNote className="w-4 h-4" /> Notes
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-xs text-amber-900/80 whitespace-pre-wrap leading-relaxed">
+                            {lead.notes}
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Ad Intelligence Card */}
                 {(lead.platform || lead.campaign_name || lead.ad_name || lead.form_name) && (
                     <Card>
