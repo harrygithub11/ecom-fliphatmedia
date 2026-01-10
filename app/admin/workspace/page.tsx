@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import {
     CheckCircle2, Clock, Phone, MessageSquare, FileText, User, RefreshCw, Plus,
     MoreHorizontal, Pencil, Trash2, Calendar, AlertCircle, Activity, UserCheck,
-    ArrowUpRight, Settings, Circle, ChevronDown, ListTodo, Package, History
+    ArrowUpRight, Settings, Circle, ChevronDown, ListTodo, Package, History, Server
 } from 'lucide-react';
 import Link from 'next/link';
 import { KanbanBoard } from '@/components/admin/KanbanBoard';
@@ -124,9 +124,20 @@ export default function WorkspacePage() {
         } catch (e) { console.error(e); }
     };
 
+    // Initial Load
     useEffect(() => {
-        Promise.all([fetchTasks(), fetchTimeline(), fetchTeam(), fetchLeads()]).finally(() => setLoading(false));
-    }, [statusFilter, priorityFilter, userFilter, activityUserFilter]);
+        Promise.all([fetchTeam(), fetchLeads()]).finally(() => setLoading(false));
+    }, []);
+
+    // Fetch Tasks on Filter Change
+    useEffect(() => {
+        fetchTasks();
+    }, [statusFilter, priorityFilter, userFilter]);
+
+    // Fetch Timeline on Filter Change
+    useEffect(() => {
+        fetchTimeline();
+    }, [activityUserFilter, activityTypeFilter]);
 
     const openCreateTaskDialog = (status?: string) => {
         setNewTask(prev => ({ ...prev, status: status || 'open' }));
@@ -811,9 +822,24 @@ export default function WorkspacePage() {
                                         <SelectValue placeholder="All Activity" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Activity</SelectItem>
-                                        <SelectItem value="notes">Notes & Calls</SelectItem>
-                                        <SelectItem value="system">System Updates</SelectItem>
+                                        <SelectItem value="all">
+                                            <div className="flex items-center gap-2">
+                                                <Activity className="w-3.5 h-3.5 opacity-70" />
+                                                <span>All Activity</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="notes">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="w-3.5 h-3.5 opacity-70" />
+                                                <span>Notes & Calls</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="system">
+                                            <div className="flex items-center gap-2">
+                                                <Server className="w-3.5 h-3.5 opacity-70" />
+                                                <span>System Updates</span>
+                                            </div>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Select value={activityUserFilter} onValueChange={setActivityUserFilter}>
