@@ -51,8 +51,8 @@ export async function GET(request: Request) {
         const total = countRows[0].total;
 
         // Fetch Data
-        query += ' ORDER BY e.created_at DESC LIMIT ? OFFSET ?';
-        params.push(limit, offset);
+        query += ` ORDER BY e.created_at DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)}`;
+        // params.push(limit, offset); // Removed to avoid mysql2 execute error
 
         const [rows]: any = await pool.execute(query, params);
 

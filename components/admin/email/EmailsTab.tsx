@@ -32,12 +32,10 @@ export function EmailsTab() {
             } else {
                 console.error('Server returned error:', data);
                 // toast({ title: 'Error loading emails', description: data.message, variant: 'destructive' });
-                // Temporary: Alert the error to see it immediately
-                alert('Server Error: ' + data.message);
             }
         } catch (error: any) {
             console.error('Fetch error:', error);
-            alert('Network Error: ' + error.message);
+            // toast({ title: 'System Error', description: 'Failed to connect to server', variant: 'destructive' });
         } finally {
             setLoading(false);
         }
