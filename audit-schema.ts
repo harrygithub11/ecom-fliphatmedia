@@ -62,8 +62,11 @@ async function audit() {
         } catch (e: any) {
             console.error("Audit Failed:", e);
         } finally {
-            await connection.end();
+            if (connection) await connection.end();
         }
+    } catch (e: any) {
+        console.error("Connection Failed:", e);
     }
+}
 
 audit();
