@@ -22,7 +22,6 @@ export async function GET(request: Request) {
                 c.id as customer_id,
                 c.name as customer_name,
                 c.email as customer_email,
-                c.avatar_url,
 
                 a.name as admin_name
             FROM interactions i
