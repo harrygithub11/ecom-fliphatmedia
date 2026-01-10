@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
         const folder = searchParams.get('folder') || 'INBOX'; // INBOX, SENT, TRASH, SPAM
         const limit = parseInt(searchParams.get('limit') || '50');
         const accountId = searchParams.get('accountId');
+        const search = searchParams.get('search') || '';
 
         let query = `
             SELECT 
