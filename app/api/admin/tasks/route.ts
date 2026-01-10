@@ -44,7 +44,7 @@ export async function GET(request: Request) {
             LEFT JOIN admins asg ON t.assigned_to = asg.id
             LEFT JOIN admins sc ON t.status_changed_by = sc.id
             LEFT JOIN task_reads tr ON t.id = tr.task_id AND tr.user_id = ?
-            WHERE t.deleted_at IS NULL
+            WHERE 1=1
         `;
         const params: any[] = [currentUserId];
 
