@@ -519,8 +519,12 @@ export default function WorkspacePage() {
                         </TabsTrigger>
                     </TabsList>
 
-                    {/* CONTROL CLUSTER: Filters & Views */}
-                    <div className="flex items-center gap-3 w-full lg:w-auto pb-3 lg:pb-0 overflow-x-auto no-scrollbar">
+
+                </div>
+
+                {/* TASKS TAB */}
+                <TabsContent value="tasks" className="mt-0 space-y-4">
+                    <div className="flex items-center justify-end gap-3 w-full pb-2 overflow-x-auto no-scrollbar">
                         {/* Status Filter */}
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="h-9 w-auto min-w-[110px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-xs font-medium rounded-lg shadow-sm">
@@ -603,10 +607,6 @@ export default function WorkspacePage() {
                             </Button>
                         </div>
                     </div>
-                </div>
-
-                {/* TASKS TAB */}
-                <TabsContent value="tasks" className="mt-0 space-y-4">
                     {tasks.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50">
                             <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
