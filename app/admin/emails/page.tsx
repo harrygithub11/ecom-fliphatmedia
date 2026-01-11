@@ -966,15 +966,13 @@ export default function MailSystemPage() {
           50% { transform: scale(1.05); }
         }
         .btn-smooth {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .btn-smooth:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          filter: brightness(110%);
         }
         .btn-smooth:active {
           transform: translateY(0);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .email-item {
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1139,7 +1137,7 @@ export default function MailSystemPage() {
                 <div className="flex">
                   <button
                     onClick={() => setView('inbox')}
-                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'inbox' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5]'
+                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'inbox' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
                       }`}
                   >
                     <Inbox className="w-4 h-4" />
@@ -1147,7 +1145,7 @@ export default function MailSystemPage() {
                   </button>
                   <button
                     onClick={() => setView('compose')}
-                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'compose' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5]'
+                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'compose' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
                       }`}
                   >
                     <Edit className="w-4 h-4" />
@@ -1155,7 +1153,7 @@ export default function MailSystemPage() {
                   </button>
                   <button
                     onClick={() => setShowDrafts(!showDrafts)}
-                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 relative ${showDrafts ? 'bg-gray-100 text-black border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5]'
+                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 relative ${showDrafts ? 'bg-gray-100 text-black border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
                       }`}
                   >
                     <FileText className="w-4 h-4" />
@@ -1210,7 +1208,7 @@ export default function MailSystemPage() {
                         <button
                           onClick={() => syncEmails(true)}
                           disabled={syncing}
-                          className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-text-black text-white text-sm font-bold rounded-lg hover:bg-gray-800 disabled:bg-gray-400"
+                          className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#0B0B0B] text-white text-sm font-bold rounded-lg hover:bg-[#1A1A1A] disabled:bg-gray-400"
                         >
                           <RefreshCw className={`w-4 h-4 ${syncing ? 'smooth-spin' : ''}`} />
                           Refresh
@@ -1523,14 +1521,14 @@ export default function MailSystemPage() {
                           <div className="border-b border-gray-border p-4 flex gap-2 flex-shrink-0">
                             <button
                               onClick={handleReply}
-                              className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-text-black text-white text-sm font-bold rounded-lg hover:bg-gray-800"
+                              className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#0B0B0B] text-white text-sm font-bold rounded-lg hover:bg-[#1A1A1A]"
                             >
                               <Reply className="w-4 h-4" />
                               Reply
                             </button>
                             <button
                               onClick={handleDelete}
-                              className="btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 border-gray-border text-text-black text-sm font-bold rounded-lg hover:border-red-500 hover:bg-red-50 hover:text-red-600"
+                              className="btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 border-[#E5E7EB] text-[#1A1A1A] text-sm font-bold rounded-lg hover:bg-[#FFECEC] hover:text-[#D11A2A] hover:border-[#F5B5B5]"
                             >
                               <Trash2 className="w-4 h-4" />
                               Delete
