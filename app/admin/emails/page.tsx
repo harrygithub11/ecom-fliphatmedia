@@ -1044,7 +1044,7 @@ export default function MailSystemPage() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-4 py-2 flex items-center gap-2 bg-black text-white font-bold rounded-lg hover:bg-gray-800 transition-all duration-200"
+                  className="px-4 py-2 flex items-center gap-2 bg-[#0B0B0B] text-white font-bold rounded-lg hover:bg-[#1A1A1A] transition-all duration-200"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="hidden sm:inline">Add Account</span>
@@ -1053,7 +1053,7 @@ export default function MailSystemPage() {
                 <div className="relative">
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-100 flex items-center gap-2 min-w-[200px] justify-between transition-all duration-200"
+                    className="px-4 py-2 border border-[#E5E7EB] text-[#1A1A1A] font-bold rounded-lg hover:bg-[#F5F5F5] flex items-center gap-2 min-w-[200px] justify-between transition-all duration-200"
                   >
                     <span className="truncate text-sm">{currentAccount?.email || 'Select Account'}</span>
                     <svg className={`w-4 h-4 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1090,20 +1090,13 @@ export default function MailSystemPage() {
                                   setShowEditModal(true)
                                   setDropdownOpen(false)
                                 }}
-                                className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded transition-all duration-200"
+                                className="p-2 hover:bg-[#F0F7FF] hover:text-blue-600 rounded transition-all duration-200"
                                 title="Edit account"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (confirm(`Delete account "${acc.name}"? This cannot be undone.`)) {
-                                    deleteAccount(acc.id)
-                                  }
-                                  setDropdownOpen(false)
-                                }}
-                                className="p-2 hover:bg-red-50 hover:text-red-600 rounded transition-all duration-200"
+                                className="p-2 hover:bg-[#FFECEC] hover:text-[#D11A2A] rounded transition-all duration-200"
                                 title="Delete account"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1146,7 +1139,7 @@ export default function MailSystemPage() {
                 <div className="flex">
                   <button
                     onClick={() => setView('inbox')}
-                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'inbox' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'
+                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'inbox' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5]'
                       }`}
                   >
                     <Inbox className="w-4 h-4" />
@@ -1154,7 +1147,7 @@ export default function MailSystemPage() {
                   </button>
                   <button
                     onClick={() => setView('compose')}
-                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'compose' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'
+                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'compose' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5]'
                       }`}
                   >
                     <Edit className="w-4 h-4" />
@@ -1162,7 +1155,7 @@ export default function MailSystemPage() {
                   </button>
                   <button
                     onClick={() => setShowDrafts(!showDrafts)}
-                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 relative ${showDrafts ? 'bg-gray-100 text-black' : 'text-gray-600 hover:bg-gray-100'
+                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 relative ${showDrafts ? 'bg-gray-100 text-black border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5]'
                       }`}
                   >
                     <FileText className="w-4 h-4" />
@@ -1182,21 +1175,21 @@ export default function MailSystemPage() {
                         <span className="text-sm font-bold text-gray-700">{selectedEmails.size} selected</span>
                         <button
                           onClick={bulkMarkAsRead}
-                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-green-50 border-2 border-green-200 text-green-700 text-sm font-bold rounded-lg hover:bg-green-100"
+                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E6F7F0] text-[#0F5132] text-sm font-bold rounded-lg hover:brightness-95"
                         >
                           <MailOpen className="w-4 h-4" />
                           Mark Read
                         </button>
                         <button
                           onClick={bulkMarkAsUnread}
-                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-blue-50 border-2 border-blue-200 text-blue-700 text-sm font-bold rounded-lg hover:bg-blue-100"
+                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E8F0FF] text-[#1E3A8A] text-sm font-bold rounded-lg hover:brightness-95"
                         >
                           <MailX className="w-4 h-4" />
                           Mark Unread
                         </button>
                         <button
                           onClick={bulkDelete}
-                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-red-50 border-2 border-red-200 text-red-600 text-sm font-bold rounded-lg hover:bg-red-100"
+                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#FFE5E5] text-[#7F1D1D] text-sm font-bold rounded-lg hover:brightness-95"
                         >
                           <Trash2 className="w-4 h-4" />
                           Delete
@@ -1207,8 +1200,8 @@ export default function MailSystemPage() {
                         <button
                           onClick={toggleBulkMode}
                           className={`btn-smooth px-4 py-2 flex items-center gap-2 border-2 text-sm font-bold rounded-lg ${bulkMode
-                              ? 'border-text-black bg-gray-100'
-                              : 'border-gray-border hover:border-text-black'
+                            ? 'border-black bg-[#F2F2F2]'
+                            : 'border-[#E5E7EB] hover:border-black'
                             }`}
                         >
                           {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
@@ -1261,7 +1254,7 @@ export default function MailSystemPage() {
                     </button>
                     <button
                       onClick={() => setShowSignatureModal(true)}
-                      className={`btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 text-sm font-bold rounded-lg ${useSignature ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-border text-text-black hover:border-text-black hover:bg-gray-50'
+                      className={`btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 text-sm font-bold rounded-lg ${useSignature ? 'border-[#16A34A] bg-[#E6F7F0] text-[#0F5132]' : 'border-[#E5E7EB] text-[#1A1A1A] hover:border-black'
                         }`}
                     >
                       <PenTool className="w-4 h-4" />
@@ -1340,14 +1333,14 @@ export default function MailSystemPage() {
                           placeholder="Search emails (from, to, subject, content)..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2.5 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200"
+                          className="w-full pl-10 pr-4 py-2.5 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200"
                         />
                       </div>
                       <button
                         onClick={() => setShowFilters(!showFilters)}
                         className={`btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 font-bold rounded-lg transition-all duration-200 ${showFilters || hasActiveFilters
-                            ? 'border-text-black bg-gray-100'
-                            : 'border-gray-border hover:border-text-black'
+                          ? 'border-black bg-[#F2F2F2]'
+                          : 'border-[#E5E7EB] text-[#1A1A1A] hover:border-black'
                           }`}
                       >
                         <Filter className="w-4 h-4" />
@@ -1356,7 +1349,7 @@ export default function MailSystemPage() {
                       {hasActiveFilters && (
                         <button
                           onClick={clearFilters}
-                          className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-red-50 border-2 border-red-200 text-red-600 font-bold rounded-lg hover:bg-red-100"
+                          className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#FFECEC] border-2 border-[#F5B5B5] text-[#D11A2A] font-bold rounded-lg hover:bg-red-100"
                         >
                           <XCircle className="w-4 h-4" />
                           Clear
@@ -1383,7 +1376,7 @@ export default function MailSystemPage() {
                             placeholder="Filter by subject..."
                             value={filterSubject}
                             onChange={(e) => setFilterSubject(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black text-sm"
+                            className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
                           />
                         </div>
                         <div>
@@ -1391,7 +1384,7 @@ export default function MailSystemPage() {
                           <select
                             value={filterFolder}
                             onChange={(e) => setFilterFolder(e.target.value as any)}
-                            className="w-full px-3 py-2 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black text-sm"
+                            className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
                           >
                             <option value="all">All Folders</option>
                             <option value="INBOX">Inbox Only</option>
@@ -1589,7 +1582,7 @@ export default function MailSystemPage() {
                   <div className="max-w-3xl space-y-4">
                     <div>
                       <label className="block font-bold text-sm tracking-wider uppercase text-gray-secondary mb-2">From</label>
-                      <input type="text" value={currentAccount?.email || ''} disabled className="w-full px-4 py-3 border border-gray-border bg-gray-50 rounded-lg" />
+                      <input type="text" value={currentAccount?.email || ''} disabled className="w-full px-4 py-3 border border-[#E5E7EB] bg-gray-50 rounded-lg" />
                     </div>
                     <div>
                       <label className="block font-bold text-sm tracking-wider uppercase text-gray-secondary mb-2">To</label>
@@ -1597,7 +1590,7 @@ export default function MailSystemPage() {
                         type="email"
                         value={to}
                         onChange={(e) => setTo(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
                         placeholder="recipient@example.com"
                       />
                     </div>
@@ -1607,7 +1600,7 @@ export default function MailSystemPage() {
                         type="text"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
                       />
                     </div>
 
@@ -1650,7 +1643,7 @@ export default function MailSystemPage() {
                       <button
                         onClick={sendEmail}
                         disabled={loading}
-                        className="btn-smooth px-8 py-3 bg-text-black text-white font-bold tracking-wider uppercase hover:bg-gray-800 disabled:bg-gray-300 flex items-center gap-2 rounded-xl"
+                        className="btn-smooth px-8 py-3 bg-[#0B0B0B] text-white font-bold tracking-wider uppercase hover:bg-[#1A1A1A] focus:ring-2 focus:ring-[#D11A2A] disabled:bg-gray-300 flex items-center gap-2 rounded-xl"
                       >
                         <Send className="w-4 h-4" />
                         {loading ? 'Sending...' : 'Send Email'}
@@ -1669,7 +1662,7 @@ export default function MailSystemPage() {
                             setView('inbox')
                           }
                         }}
-                        className="btn-smooth px-8 py-3 border-2 border-gray-300 font-bold tracking-wider uppercase hover:bg-gray-50 rounded-xl"
+                        className="btn-smooth px-8 py-3 border-2 border-[#E5E7EB] font-bold tracking-wider uppercase hover:bg-[#F5F5F5] rounded-xl"
                       >
                         Cancel
                       </button>
@@ -1733,10 +1726,10 @@ export default function MailSystemPage() {
                   </div>
 
                   <div className="flex gap-4 pt-4">
-                    <button onClick={createAccount} disabled={loading} className="btn-smooth flex-1 px-6 py-3 bg-text-black text-white font-bold rounded-xl hover:bg-gray-800 disabled:bg-gray-400">
+                    <button onClick={createAccount} disabled={loading} className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400">
                       {loading ? 'Creating...' : 'Create Account'}
                     </button>
-                    <button onClick={() => setShowAddModal(false)} className="btn-smooth px-6 py-3 border-2 border-gray-300 font-bold rounded-xl hover:bg-gray-50">
+                    <button onClick={() => setShowAddModal(false)} className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]">
                       Cancel
                     </button>
                   </div>
@@ -1791,10 +1784,10 @@ export default function MailSystemPage() {
                   </div>
 
                   <div className="flex gap-4 pt-4">
-                    <button onClick={updateAccount} disabled={loading} className="btn-smooth flex-1 px-6 py-3 bg-text-black text-white font-bold rounded-xl hover:bg-gray-800 disabled:bg-gray-400">
+                    <button onClick={updateAccount} disabled={loading} className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400">
                       {loading ? 'Updating...' : 'Update Account'}
                     </button>
-                    <button onClick={() => { setShowEditModal(false); setEditingAccount(null); }} className="btn-smooth px-6 py-3 border-2 border-gray-300 font-bold rounded-xl hover:bg-gray-50">
+                    <button onClick={() => { setShowEditModal(false); setEditingAccount(null); }} className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]">
                       Cancel
                     </button>
                   </div>
@@ -1870,13 +1863,13 @@ export default function MailSystemPage() {
                     <button
                       onClick={saveSignature}
                       disabled={loading}
-                      className="btn-smooth flex-1 px-6 py-3 bg-text-black text-white font-bold rounded-xl hover:bg-gray-800 disabled:bg-gray-400"
+                      className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400"
                     >
                       {loading ? 'Saving...' : 'Save Signature'}
                     </button>
                     <button
                       onClick={() => setShowSignatureModal(false)}
-                      className="btn-smooth px-6 py-3 border-2 border-gray-300 font-bold rounded-xl hover:bg-gray-50"
+                      className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]"
                     >
                       Cancel
                     </button>
