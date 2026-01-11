@@ -224,6 +224,21 @@ export default function LeadsPage() {
         const stageConfig = stages.find(s => s.value === stage);
         if (!stageConfig) return <Badge variant="secondary">{stage ? stage.replace('_', ' ') : 'Unknown'}</Badge>;
 
+        if (stageConfig.color && stageConfig.color.startsWith('#')) {
+            return (
+                <Badge
+                    variant="outline"
+                    style={{
+                        backgroundColor: stageConfig.color,
+                        borderColor: stageConfig.color, // optional: darker border?
+                        color: '#1f2937' // text-gray-800
+                    }}
+                >
+                    {stageConfig.label}
+                </Badge>
+            );
+        }
+
         const colorClasses: Record<string, string> = {
             'amber': 'bg-amber-100 text-amber-700 border-amber-200',
             'blue': 'bg-blue-100 text-blue-700 border-blue-200',
@@ -510,6 +525,24 @@ export default function LeadsPage() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {stages.map(stage => {
+                                                        if (stage.color && stage.color.startsWith('#')) {
+                                                            return (
+                                                                <SelectItem key={stage.id} value={stage.value}>
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="pointer-events-none"
+                                                                        style={{
+                                                                            backgroundColor: stage.color,
+                                                                            borderColor: stage.color,
+                                                                            color: '#1f2937'
+                                                                        }}
+                                                                    >
+                                                                        {stage.label}
+                                                                    </Badge>
+                                                                </SelectItem>
+                                                            );
+                                                        }
+
                                                         const colorClasses: Record<string, string> = {
                                                             'amber': 'bg-amber-100 text-amber-700 border-amber-200',
                                                             'blue': 'bg-blue-100 text-blue-700 border-blue-200',
