@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useComposeEmail } from '@/context/ComposeEmailContext'
 import { Mail, Send, RefreshCw, Inbox, Edit, Trash2, Reply, Plus, X, Check, Paperclip, FileText, Save, Clock, PenTool, Search, Filter, XCircle, CheckSquare, Square, MailOpen, MailX, Settings } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { toast } from '@/components/toast'
@@ -29,6 +30,7 @@ interface Email {
 
 export default function MailSystemPage() {
   const router = useRouter()
+  const { openCompose, isOpen: showComposeModal, closeCompose } = useComposeEmail()
   const [accounts, setAccounts] = useState<EmailAccount[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>('')
   const [emails, setEmails] = useState<Email[]>([])
@@ -40,7 +42,6 @@ export default function MailSystemPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [showComposeModal, setShowComposeModal] = useState(false)
 
   const [to, setTo] = useState('')
   const [subject, setSubject] = useState('')
@@ -133,18 +134,18 @@ export default function MailSystemPage() {
 
   // Auto-save draft every 30 seconds when composing
   useEffect(() => {
-    if (view !== 'compose' || !selectedAccount) return
+    if (showComposeModal !== true || !selectedAccount) return
 
     const autoSaveInterval = setInterval(() => {
       saveDraft(true) // silent save
     }, 30000) // 30 seconds
 
     return () => clearInterval(autoSaveInterval)
-  }, [view, selectedAccount, to, subject, body, htmlBody, attachments])
+  }, [showComposeModal, selectedAccount, to, subject, body, htmlBody, attachments])
 
   // Save draft on tab close / page unload
   useEffect(() => {
-    if (view !== 'compose') return
+    if (showComposeModal !== true) return
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (to || subject || body || htmlBody) {
@@ -156,7 +157,7 @@ export default function MailSystemPage() {
 
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [view, to, subject, body, htmlBody])
+  }, [showComposeModal, to, subject, body, htmlBody])
 
   const loadReadStatus = async (accountId: string) => {
     try {
@@ -420,7 +421,7 @@ export default function MailSystemPage() {
     setBody(replyText)
     setHtmlBody(`<br><br><p>On ${new Date(selectedEmail.date).toLocaleString()}, <strong>${selectedEmail.from}</strong> wrote:</p><blockquote style="border-left: 3px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.htmlContent || selectedEmail.text.replace(/\n/g, '<br>')}</blockquote>`)
     setAttachments([])
-    setShowComposeModal(true)
+    openCompose()
   }
 
   const handleDelete = async () => {
@@ -470,7 +471,7 @@ export default function MailSystemPage() {
         setTimeout(() => {
           setAttachments([])
           setCurrentDraftId(null)
-          setShowComposeModal(false)
+          closeCompose() // Modal closed via global context now
           // Reload inbox immediately to show sent email
           loadInbox()
           fetchDrafts()
@@ -555,7 +556,7 @@ export default function MailSystemPage() {
     setHtmlBody(draft.htmlBody || '')
     setCurrentDraftId(draft.id)
     setShowDrafts(false)
-    setShowComposeModal(true)
+    openCompose()
     toast.success('Draft loaded')
   }
 
@@ -1040,7 +1041,7 @@ export default function MailSystemPage() {
                     <span className="hidden sm:inline">Inbox</span> ({emails.length})
                   </button>
                   <button
-                    onClick={() => setShowComposeModal(true)}
+                    onClick={() => openCompose()}
                     className="px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent hover:text-black"
                   >
                     <Edit className="w-4 h-4" />
@@ -1428,10 +1429,10 @@ export default function MailSystemPage() {
                     onClick={() => {
                       if (to || subject || (useRichText ? htmlBody : body) || attachments.length > 0) {
                         if (confirm('Discard draft?')) {
-                          setShowComposeModal(false)
+                          closeCompose()
                         }
                       } else {
-                        setShowComposeModal(false)
+                        closeCompose()
                       }
                     }}
                   />
@@ -1480,10 +1481,10 @@ export default function MailSystemPage() {
                           onClick={() => {
                             if (to || subject || (useRichText ? htmlBody : body) || attachments.length > 0) {
                               if (confirm('Discard draft?')) {
-                                setShowComposeModal(false)
+                                closeCompose()
                               }
                             } else {
-                              setShowComposeModal(false)
+                              closeCompose()
                             }
                           }}
                           className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-full transition-all duration-200"
@@ -1564,7 +1565,7 @@ export default function MailSystemPage() {
                       <button
                         onClick={() => {
                           if (confirm('Discard draft?')) {
-                            setShowComposeModal(false)
+                            closeCompose()
                           }
                         }}
                         className="px-6 py-3 font-bold text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"

@@ -51,14 +51,16 @@ export function ComposeModal() {
     // Initial Data Fetch
     useEffect(() => {
         if (isOpen) {
-            // Load SMTP accounts
-            fetch('/api/admin/smtp-accounts', { credentials: 'include' })
+            // Load SMTP accounts using the working email-system API
+            fetch('/api/email-system/accounts', {
+                headers: { 'Authorization': 'Bearer YWRtaW4=' }
+            })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success && data.accounts.length > 0) {
+                    if (data.accounts && data.accounts.length > 0) {
                         setAccounts(data.accounts);
                         if (!formData.smtp_account_id) {
-                            setFormData(prev => ({ ...prev, smtp_account_id: String(data.accounts[0].id) }));
+                            setFormData(prev => ({ ...prev, smtp_account_id: data.accounts[0].id }));
                         }
                     }
                 });
@@ -120,17 +122,18 @@ export function ComposeModal() {
 
         setSending(true);
         try {
-            const res = await fetch('/api/admin/emails/send', {
+            const res = await fetch('/api/email-system/send', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer YWRtaW4='
+                },
                 body: JSON.stringify({
-                    recipients: { to: [{ email: formData.to }] },
+                    accountId: formData.smtp_account_id,
+                    to: formData.to,
                     subject: formData.subject,
-                    body_html: `<p>${formData.body}</p>`,
-                    body_text: formData.body,
-                    smtp_account_id: parseInt(formData.smtp_account_id),
-                    related_customer_id: data.customerId
+                    text: formData.body,
+                    html: `<p>${formData.body.replace(/\n/g, '<br>')}</p>`
                 })
             });
             const resData = await res.json();
@@ -140,7 +143,7 @@ export function ComposeModal() {
                 setFormData({ ...formData, subject: '', body: '', to: '' });
                 setSearchQuery('');
             } else {
-                toast({ title: "Error", description: resData.message || "Failed to send", variant: "destructive" });
+                toast({ title: "Error", description: resData.error || resData.message || "Failed to send", variant: "destructive" });
             }
         } catch (e) {
             toast({ title: "Error", description: "Network error", variant: "destructive" });
@@ -193,7 +196,7 @@ export function ComposeModal() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {accounts.map(acc => (
-                                        <SelectItem key={acc.id} value={String(acc.id)}>{acc.name} &lt;{acc.from_email}&gt;</SelectItem>
+                                        <SelectItem key={acc.id} value={acc.id}>{acc.name} &lt;{acc.email}&gt;</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

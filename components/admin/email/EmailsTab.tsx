@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ComposeModal } from './ComposeModal';
+import { useComposeEmail } from '@/context/ComposeEmailContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Mail, CheckCircle2, XCircle, Clock, AlertTriangle, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -13,7 +13,8 @@ import { formatDistanceToNow } from 'date-fns';
 export function EmailsTab() {
     const [emails, setEmails] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [composeOpen, setComposeOpen] = useState(false);
+    // Global Compose
+    const { openCompose, isOpen: composeOpen } = useComposeEmail();
     const [filterStatus, setFilterStatus] = useState<string | null>(null);
     const [viewingEmail, setViewingEmail] = useState<any | null>(null);
 
@@ -83,7 +84,7 @@ export function EmailsTab() {
                     </Button>
                 </div>
 
-                <Button onClick={() => setComposeOpen(true)}>
+                <Button onClick={() => openCompose()}>
                     <Mail className="w-4 h-4 mr-2" /> Compose Email
                 </Button>
             </div>
@@ -148,10 +149,7 @@ export function EmailsTab() {
                 </DialogContent>
             </Dialog>
 
-            <ComposeModal
-                open={composeOpen}
-                onOpenChange={setComposeOpen}
-            />
+            {/* Removed Local ComposeModal - Using Global Provider */}
         </div>
     );
 }

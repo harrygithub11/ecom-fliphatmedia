@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ComposeModal } from '@/components/admin/email/ComposeModal';
+import { useComposeEmail } from '@/context/ComposeEmailContext';
 
 interface Customer {
     id: number;
@@ -146,8 +146,8 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
     const [proposalAmount, setProposalAmount] = useState("");
     const [proposalContent, setProposalContent] = useState("");
 
-    // Email State
-    const [composeOpen, setComposeOpen] = useState(false);
+    // Global Compose
+    const { openCompose } = useComposeEmail();
 
     // Notes Edit State
     const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -646,7 +646,7 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                         <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handleQuickAction('call')}>
                             <PhoneCall className="w-4 h-4" /> Log Call
                         </Button>
-                        <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setComposeOpen(true)}>
+                        <Button variant="outline" className="w-full justify-start gap-2" onClick={() => openCompose({ to: lead?.email, customerId: lead?.id })}>
                             <Mail className="w-4 h-4" /> Send Email
                         </Button>
                         <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handleQuickAction('whatsapp')}>
@@ -1260,13 +1260,7 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                     </Dialog>
                 </Card >
             </div>
-            {composeOpen && (
-                <ComposeModal
-                    open={composeOpen}
-                    onOpenChange={setComposeOpen}
-                    defaultTo={lead?.email || ''} // Updated prop name
-                    customerId={lead?.id}
-                />
-            )}</div >
+            {/* Removed Local ComposeModal - Using Global Provider */}
+        </div >
     );
 }
