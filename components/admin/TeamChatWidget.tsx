@@ -82,7 +82,7 @@ export function TeamChatWidget() {
             {!isOpen && (
                 <Button
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-indigo-600 hover:bg-indigo-700 text-white z-50 animate-in zoom-in duration-300 flex items-center justify-center p-0"
+                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-red-600 hover:bg-red-700 text-white z-50 animate-in zoom-in duration-300 flex items-center justify-center p-0"
                 >
                     <MessageSquare className="w-7 h-7" />
                 </Button>
@@ -93,7 +93,7 @@ export function TeamChatWidget() {
                 <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 z-50 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
 
                     {/* Header */}
-                    <div className="p-4 bg-indigo-600 text-white flex items-center justify-between shrink-0 shadow-sm z-10">
+                    <div className="p-4 bg-red-600 text-white flex items-center justify-between shrink-0 shadow-sm z-10">
                         {activeUser ? (
                             <div className="flex items-center gap-3">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 -ml-2 rounded-full" onClick={() => setActiveUser(null)}>
@@ -103,13 +103,13 @@ export function TeamChatWidget() {
                                     <div className="relative">
                                         <Avatar className="h-8 w-8 border-2 border-white/20">
                                             <AvatarImage src={activeUser.avatar_url} />
-                                            <AvatarFallback className="bg-indigo-800 text-xs">{activeUser.name[0]}</AvatarFallback>
+                                            <AvatarFallback className="bg-red-800 text-xs">{activeUser.name[0]}</AvatarFallback>
                                         </Avatar>
-                                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-indigo-600 rounded-full"></span>
+                                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-red-600 rounded-full"></span>
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-sm leading-tight">{activeUser.name}</h3>
-                                        <p className="text-[10px] text-indigo-200">Online</p>
+                                        <p className="text-[10px] text-red-200">Online</p>
                                     </div>
                                 </div>
                             </div>
@@ -150,10 +150,10 @@ export function TeamChatWidget() {
                                                         "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm",
                                                         isIncoming
                                                             ? "bg-white dark:bg-zinc-800 text-foreground rounded-tl-none border border-zinc-200 dark:border-zinc-700"
-                                                            : "bg-indigo-600 text-white rounded-tr-none"
+                                                            : "bg-red-600 text-white rounded-tr-none"
                                                     )}>
                                                         {msg.message}
-                                                        <span className={cn("text-[10px] block mt-1 text-right opacity-70", isIncoming ? "text-muted-foreground" : "text-indigo-100")}>
+                                                        <span className={cn("text-[10px] block mt-1 text-right opacity-70", isIncoming ? "text-muted-foreground" : "text-red-100")}>
                                                             {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     </div>
@@ -171,13 +171,13 @@ export function TeamChatWidget() {
                                             value={inputText}
                                             onChange={(e) => setInputText(e.target.value)}
                                             placeholder="Type a message..."
-                                            className="flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                                            className="flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
                                         />
                                         <Button
                                             type="submit"
                                             size="icon"
                                             disabled={!inputText.trim() || loading}
-                                            className="h-10 w-10 rounded-full bg-indigo-600 hover:bg-indigo-700 shrink-0"
+                                            className="h-10 w-10 rounded-full bg-red-600 hover:bg-red-700 shrink-0"
                                         >
                                             <Send className="w-4 h-4 text-white" />
                                         </Button>
