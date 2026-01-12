@@ -22,8 +22,34 @@ model Admin {
 
   login_logs    AdminLoginLog[]
   activity_logs AdminActivityLog[]
+  
+  sentFlashMessages     FlashMessage[] @relation("SentFlashMessages")
+  receivedFlashMessages FlashMessage[] @relation("ReceivedFlashMessages")
 
   @@map("admins")
+}
+
+model FlashMessage {
+  id          String    @id @default(cuid())
+  senderId    Int
+  receiverId  Int
+  message     String    @db.Text
+  type        String    @default("flash") // "flash" or "chat"
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  sentAt      DateTime  @default(now())
+  
+  sender      Admin     @relation("SentFlashMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    Admin     @relation("ReceivedFlashMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  parentMessageId String?
+  parentMessage FlashMessage? @relation("Thread", fields: [parentMessageId], references: [id])
+  replies       FlashMessage[] @relation("Thread")
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([isRead])
+  @@map("flash_messages")
 }
 
 model Customer {

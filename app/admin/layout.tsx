@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/admin/NotificationBell';
 import { useState, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
+import { FlashMessageOverlay } from '@/components/admin/FlashMessageOverlay';
+import { FlashMessageComposer } from '@/components/admin/FlashMessageComposer';
+import { TeamChatWidget } from '@/components/admin/TeamChatWidget';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -217,6 +220,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     {/* Right: Quick Stats */}
                     <div className="flex items-center gap-6">
+                        <FlashMessageComposer />
                         <NotificationBell />
                         <div className="text-center">
                             <p className="text-xs text-muted-foreground uppercase tracking-wide">Leads Today</p>
@@ -244,6 +248,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
             </main>
             <Toaster />
+            <FlashMessageOverlay />
+            <TeamChatWidget />
         </div>
     );
 }
