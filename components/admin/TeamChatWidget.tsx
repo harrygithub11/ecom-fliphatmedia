@@ -10,6 +10,8 @@ interface ChatUser {
     name: string;
     email: string;
     avatar_url?: string;
+    isOnline?: boolean;
+    lastSeen?: string;
 }
 
 export function TeamChatWidget() {
@@ -42,6 +44,16 @@ export function TeamChatWidget() {
 
     const hasUnread = unreadChatMessages.length > 0;
 
+    // Heartbeat to keep online status
+    useEffect(() => {
+        const beat = () => {
+            fetch('/api/admin/heartbeat', { method: 'POST' }).catch(() => { });
+        };
+        beat(); // Initial
+        const interval = setInterval(beat, 60000); // Every 1 min
+        return () => clearInterval(interval);
+    }, []);
+
     // Fetch team members on mount
     useEffect(() => {
         if (isOpen) {
@@ -60,9 +72,12 @@ export function TeamChatWidget() {
                         id: -1, // Special ID for group
                         name: "Team Group",
                         email: "Everyone",
-                        avatar_url: "/group-icon-placeholder.png" // We can use icon fallback
+                        avatar_url: "/group-icon-placeholder.png", // We can use icon fallback
+                        isOnline: true // Always online
                     };
 
+                    // Logic to set isOnline based on lastSeen if API provides it
+                    // Assuming API /api/admin/team returns isOnline/lastSeen now
                     setUsers([groupOption, ...teamMembers]);
                 })
                 .catch(() => { });
@@ -133,10 +148,15 @@ export function TeamChatWidget() {
             setAttachment(null);
             setPreviewUrl(null);
             // Refresh
+            // Refresh
             const loadType = activeUser.id === -1 ? 'group_chat' : 'chat';
             const loadId = activeUser.id === -1 ? undefined : activeUser.id;
-            const msgs = await fetchMessages(loadType, loadId);
-            setMessages(msgs);
+
+            // Wait a moment for DB propagation if needed, or just fetch
+            setTimeout(async () => {
+                const msgs = await fetchMessages(loadType, loadId);
+                setMessages(msgs);
+            }, 500); // Slight delay to ensure upload/db write completes
         } catch (error) {
             console.error(error);
         } finally {
@@ -195,7 +215,13 @@ export function TeamChatWidget() {
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-sm leading-tight">{activeUser.name}</h3>
-                                        <p className="text-[10px] text-red-200">Online</p>
+                                        <p className="text-[10px] text-red-200">
+                                            {activeUser.id === -1 ? 'Everyone' : (
+                                                activeUser.isOnline ? 'Online' : (
+                                                    activeUser.lastSeen ? `Last seen ${new Date(activeUser.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Offline'
+                                                )
+                                            )}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -250,11 +276,19 @@ export function TeamChatWidget() {
                                                         {msg.attachmentUrl && (
                                                             <div className="mb-2 rounded-lg overflow-hidden border border-black/10">
                                                                 {msg.attachmentType === 'image' ? (
-                                                                    <img src={msg.attachmentUrl} alt="attachment" className="max-w-full h-auto max-h-48 object-cover" />
+                                                                    <img
+                                                                        src={msg.attachmentUrl}
+                                                                        alt="attachment"
+                                                                        className="max-w-full h-auto max-h-48 object-cover block" // Added block to ensure spacing
+                                                                        onError={(e) => {
+                                                                            (e.target as HTMLImageElement).src = '/file-fallback.png'; // Fallback if broken
+                                                                            (e.target as HTMLImageElement).style.display = 'none'; // Or hide
+                                                                        }}
+                                                                    />
                                                                 ) : (
                                                                     <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 hover:bg-black/10 transition-colors">
                                                                         <FileText className="w-4 h-4" />
-                                                                        <span className="underline text-xs">Download File</span>
+                                                                        <span className="underline text-xs">Download {msg.attachmentType || 'File'}</span>
                                                                     </a>
                                                                 )}
                                                             </div>

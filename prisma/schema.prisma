@@ -589,8 +589,15 @@ model emailrule {
   priority    Int      @default(0)
   conditions  String   @db.Text
   actions     String   @db.Text
+  avatar_url  String?
+  role        String   @default("admin")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  isOnline    Boolean  @default(false)
+  lastSeen    DateTime?
+
+  // Assuming FlashMessage model exists elsewhere or will be added.
+  // sentFlashMessages     FlashMessage[] @relation("SentFlashMessages")
   
   @@index([accountId])
   @@index([enabled])
