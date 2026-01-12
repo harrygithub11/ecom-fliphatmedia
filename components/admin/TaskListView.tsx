@@ -7,7 +7,7 @@ import {
     Calendar, MessageSquare, Flag, User, ChevronDown, ChevronRight,
     GripVertical, Trash2, Copy, Edit3
 } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,6 +48,7 @@ interface TeamMember {
     id: number;
     name: string;
     email?: string;
+    avatar_url?: string;
 }
 
 interface TaskListViewProps {
@@ -178,16 +179,36 @@ function TaskRow({
             >
                 <SelectTrigger className="w-10 h-8 border-0 bg-transparent p-0 justify-center">
                     <Avatar className="w-7 h-7">
-                        <AvatarFallback className="text-xs bg-zinc-200 dark:bg-zinc-700">
-                            {task.assigned_name ? task.assigned_name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
-                        </AvatarFallback>
+                        {(() => {
+                            const assignedMember = team.find(m => m.id === task.assigned_to);
+                            return (
+                                <>
+                                    {assignedMember?.avatar_url && (
+                                        <AvatarImage
+                                            src={assignedMember.avatar_url}
+                                            alt={task.assigned_name || ''}
+                                            className="object-cover"
+                                        />
+                                    )}
+                                    <AvatarFallback className="text-xs bg-zinc-200 dark:bg-zinc-700">
+                                        {task.assigned_name ? task.assigned_name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                                    </AvatarFallback>
+                                </>
+                            );
+                        })()}
                     </Avatar>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {team.map(member => (
                         <SelectItem key={member.id} value={member.id.toString()}>
-                            {member.name}
+                            <div className="flex items-center gap-2">
+                                <Avatar className="w-5 h-5">
+                                    {member.avatar_url && <AvatarImage src={member.avatar_url} className="object-cover" />}
+                                    <AvatarFallback className="text-[10px]">{member.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                {member.name}
+                            </div>
                         </SelectItem>
                     ))}
                 </SelectContent>
