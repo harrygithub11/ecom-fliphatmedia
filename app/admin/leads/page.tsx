@@ -11,6 +11,7 @@ import { Search, Mail, Phone, MoreHorizontal, Plus, Upload, Trash2, MapPin } fro
 import { CSVImportModal } from '@/components/admin/CSVImportModal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
+import { LeadPreviewModal } from '@/components/admin/LeadPreviewModal';
 import {
     Table,
     TableBody,
@@ -81,6 +82,8 @@ export default function LeadsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [csvImportOpen, setCsvImportOpen] = useState(false);
     const [deleteLeadId, setDeleteLeadId] = useState<number | null>(null);
+    const [previewLeadId, setPreviewLeadId] = useState<number | null>(null);
+    const [previewLeadData, setPreviewLeadData] = useState<Customer | undefined>(undefined);
 
     // Team members for assignment
     const [admins, setAdmins] = useState<{ id: number, name: string, email: string, avatar_url?: string }[]>([]);
@@ -462,7 +465,13 @@ export default function LeadsPage() {
                                 filtered.map((lead) => (
                                     <TableRow key={lead.id} className="group cursor-pointer hover:bg-muted/50">
                                         <TableCell>
-                                            <a href={`/admin/leads/${lead.id}`} className="block">
+                                            <div
+                                                className="block cursor-pointer group"
+                                                onClick={() => {
+                                                    setPreviewLeadId(lead.id);
+                                                    setPreviewLeadData(lead);
+                                                }}
+                                            >
                                                 <div className="font-medium text-primary group-hover:underline flex items-center gap-2">
                                                     {lead.name}
                                                     {lead.location && (
@@ -473,7 +482,7 @@ export default function LeadsPage() {
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">{lead.email}</div>
                                                 {lead.phone && <div className="text-xs text-muted-foreground">{lead.phone}</div>}
-                                            </a>
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             {lead.order_source === 'lifetime_12k' ? <Badge className="bg-purple-100 text-purple-700 border-purple-200">12k Offer</Badge> :
@@ -675,6 +684,25 @@ export default function LeadsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Lead Preview Modal */}
+            <LeadPreviewModal
+                open={!!previewLeadId}
+                onOpenChange={(open) => !open && setPreviewLeadId(null)}
+                leadId={previewLeadId}
+                initialData={previewLeadData}
+                stages={stages}
+                scores={scores}
+                admins={admins}
+                onUpdate={() => {
+                    // Refresh listing silently
+                    fetch('/api/admin/leads')
+                        .then(res => res.json())
+                        .then(data => {
+                            if (Array.isArray(data)) setLeads(data);
+                        });
+                }}
+            />
         </div>
     );
 }
