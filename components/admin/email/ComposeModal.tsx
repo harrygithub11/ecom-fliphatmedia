@@ -217,7 +217,7 @@ export function ComposeModal() {
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && closeCompose()}>
             <DialogContent className="sm:max-w-[800px] p-0 gap-0 overflow-hidden bg-white">
-                <DialogHeader className="p-4 border-b bg-zinc-50 flex flex-row items-center justify-between">
+                <DialogHeader className="p-4 pr-10 border-b bg-zinc-50 flex flex-row items-center justify-between">
                     <DialogTitle className="text-lg font-black uppercase tracking-tight">New Message</DialogTitle>
                     <div className="flex gap-2">
                         <Select onValueChange={(val) => handleApplyTemplate(templates.find(t => t.id === val))}>
