@@ -60,7 +60,11 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        // Send Invitations via Flash Messages
+        console.log('[MEETING_CREATED]', meeting.id, meeting.title);
+
+        // TODO: Re-enable invitations after FlashMessage schema verification
+        // Currently disabled to ensure meeting creation works
+        /*
         if (inviteeIds && Array.isArray(inviteeIds) && inviteeIds.length > 0) {
             const invitationData = {
                 type: 'meeting_invitation',
@@ -83,10 +87,12 @@ export async function POST(request: NextRequest) {
                 });
             }
         }
+        */
 
         return NextResponse.json({ success: true, meeting });
     } catch (error: any) {
         console.error('[MEETING_CREATE_ERROR]', error);
+        console.error('[MEETING_CREATE_ERROR_DETAIL]', error.message, error.stack);
         return NextResponse.json({ success: false, error: 'Failed to create meeting', message: error.message }, { status: 500 });
     }
 }
