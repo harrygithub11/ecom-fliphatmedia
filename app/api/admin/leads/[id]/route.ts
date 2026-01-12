@@ -50,6 +50,20 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 [id]
             );
 
+            // 6. Fetch Emails from cachedemail table (SENT and RECEIVED)
+            const { prisma } = await import('@/lib/prisma');
+            const p = prisma as any;
+            const emails = await p.cachedemail.findMany({
+                where: {
+                    OR: [
+                        { from: { contains: customer.email } },
+                        { to: { contains: customer.email } }
+                    ]
+                },
+                orderBy: { date: 'desc' },
+                take: 50
+            });
+
             return NextResponse.json({
                 success: true,
                 data: {
@@ -57,7 +71,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
                     deals,
                     timeline: interactions,
                     tasks,
-                    files: fileRows
+                    files: fileRows,
+                    emails: emails.map((e: any) => ({
+                        ...e,
+                        date: e.date.toISOString()
+                    }))
                 }
             });
 

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Phone, Mail, MapPin, Calendar, ExternalLink, MessageSquare, StickyNote, Plus, Clock, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { useComposeEmail } from '@/context/ComposeEmailContext';
 
 interface LeadPreviewModalProps {
     open: boolean;
@@ -26,6 +27,7 @@ interface LeadPreviewModalProps {
 }
 
 export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stages, scores, admins, onUpdate }: LeadPreviewModalProps) {
+    const { openCompose } = useComposeEmail();
     const [loading, setLoading] = useState(false);
     const [details, setDetails] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('timeline');
@@ -122,7 +124,15 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                                 </DialogTitle>
                                 <div className="text-sm text-muted-foreground flex flex-col gap-1 mt-1">
                                     <div className="flex items-center gap-3">
-                                        {lead.email && <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> {lead.email}</span>}
+                                        {lead.email && (
+                                            <button
+                                                onClick={() => openCompose({ to: lead.email })}
+                                                className="flex items-center gap-1.5 hover:text-primary transition-colors group"
+                                            >
+                                                <Mail className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
+                                                <span className="underline decoration-muted-foreground/30 underline-offset-2">{lead.email}</span>
+                                            </button>
+                                        )}
                                         {lead.phone && <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> {lead.phone}</span>}
                                     </div>
                                     {lead.location && <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {lead.location}</div>}
@@ -211,6 +221,9 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                             <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-10 bg-transparent">
                                 <StickyNote className="w-4 h-4 mr-2" /> Notes
                             </TabsTrigger>
+                            <TabsTrigger value="emails" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-10 bg-transparent">
+                                <Mail className="w-4 h-4 mr-2" /> Emails
+                            </TabsTrigger>
                         </TabsList>
                     </div>
 
@@ -284,6 +297,52 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                                     />
                                 </div>
                             )}
+
+                            {activeTab === 'emails' && (
+                                <div className="space-y-4">
+                                    {loading ? (
+                                        <div className="flex items-center justify-center py-10">
+                                            <Clock className="w-4 h-4 animate-spin mr-2" /> Loading emails...
+                                        </div>
+                                    ) : (details?.emails || []).length === 0 ? (
+                                        <div className="text-center py-10 text-muted-foreground italic">No emails found for this lead.</div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {details.emails.map((email: any) => (
+                                                <div key={email.id} className="bg-white dark:bg-zinc-950 border rounded-xl p-4 shadow-sm hover:border-primary/30 transition-all group">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                                                                {email.from.includes(lead.email) ? 'RECEIVED' : 'SENT'}
+                                                            </span>
+                                                            <h4 className="font-bold text-sm leading-tight group-hover:text-primary transition-colors">{email.subject || '(No Subject)'}</h4>
+                                                        </div>
+                                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{new Date(email.date).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{email.textSnippet || email.text || 'No content preview'}</p>
+                                                    <div className="flex justify-end pt-2 border-t border-zinc-100 dark:border-zinc-900">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-primary/5 hover:text-primary"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openCompose({
+                                                                    to: email.from.includes(lead.email) ? email.from : email.to,
+                                                                    subject: `Re: ${email.subject}`,
+                                                                    body: `\n\n--- On ${new Date(email.date).toLocaleString()}, ${email.from} wrote: ---\n\n${email.textSnippet || email.text}`
+                                                                });
+                                                            }}
+                                                        >
+                                                            <Mail className="w-3 h-3 mr-2" /> Reply
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </ScrollArea>
 
@@ -292,8 +351,11 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                             Last updated: {details?.profile ? new Date(details.profile.created_at).toLocaleDateString() : 'Just now'}
                         </span>
                         <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-                            <Button asChild>
+                            <Button variant="ghost" size="sm" onClick={() => openCompose({ to: lead.email })} className="text-secondary-foreground hover:bg-secondary">
+                                <Mail className="w-4 h-4 mr-2" /> Send Email
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Close</Button>
+                            <Button size="sm" asChild>
                                 <Link href={`/admin/leads/${leadId}`}>Full Profile</Link>
                             </Button>
                         </div>
