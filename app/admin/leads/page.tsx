@@ -43,6 +43,7 @@ interface Customer {
     budget?: number;
     ltv?: number;
     notes?: string;
+    tags?: string | any;
     // FB / Ad Data
     fb_lead_id?: string;
     fb_created_time?: string;
