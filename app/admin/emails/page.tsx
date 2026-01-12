@@ -36,19 +36,15 @@ export default function MailSystemPage() {
   const [readEmails, setReadEmails] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState(false)
-  const [view, setView] = useState<'inbox' | 'compose'>('inbox')
+  const [view, setView] = useState<'inbox' | 'compose' | 'templates'>('inbox')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-
-
 
   // Draft management
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<any[]>([])
   const [showDrafts, setShowDrafts] = useState(false)
-
-
 
   // Search and filter
   const [searchQuery, setSearchQuery] = useState('')
@@ -63,22 +59,28 @@ export default function MailSystemPage() {
   const [bulkMode, setBulkMode] = useState(false)
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set())
 
-
-
-
-
-
-
+  // Templates management
+  const [templates, setTemplates] = useState<any[]>([])
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<any>(null)
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    subject: '',
+    bodyText: '',
+    category: 'General',
+    isShared: false
+  })
 
   const [newAccount, setNewAccount] = useState({
     name: '',
     email: '',
     username: '',
     password: '',
-    imapHost: 'mail.connectharish.online',
+    imapHost: 'imap.hostinger.com',
     imapPort: 993,
     imapSecure: true,
-    smtpHost: 'mail.connectharish.online',
+    smtpHost: 'smtp.hostinger.com',
     smtpPort: 465,
     smtpSecure: true,
   })
@@ -96,6 +98,82 @@ export default function MailSystemPage() {
 
     fetchAccounts()
   }, [router])
+
+  useEffect(() => {
+    if (view === 'templates' && selectedAccount) {
+      fetchTemplates()
+    }
+  }, [view, selectedAccount])
+
+  const fetchTemplates = async () => {
+    if (!selectedAccount) return
+    setLoadingTemplates(true)
+    try {
+      const res = await fetch(`/api/email-system/templates?accountId=${selectedAccount}`, {
+        headers: { 'Authorization': 'Bearer YWRtaW4=' }
+      })
+      const data = await res.json()
+      if (data.success) {
+        setTemplates(data.templates)
+      }
+    } catch (e) {
+      toast.error('Failed to fetch templates')
+    } finally {
+      setLoadingTemplates(false)
+    }
+  }
+
+  const handleCreateOrUpdateTemplate = async () => {
+    if (!templateForm.name || !selectedAccount) {
+      toast.error('Please name your template')
+      return
+    }
+
+    try {
+      const method = editingTemplate ? 'PATCH' : 'POST'
+      const res = await fetch('/api/email-system/templates', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer YWRtaW4='
+        },
+        body: JSON.stringify({
+          ...templateForm,
+          accountId: selectedAccount,
+          templateId: editingTemplate?.id
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(editingTemplate ? 'Template updated' : 'Template created')
+        setShowTemplateModal(false)
+        setEditingTemplate(null)
+        setTemplateForm({ name: '', subject: '', bodyText: '', category: 'General', isShared: false })
+        fetchTemplates()
+      } else {
+        toast.error(data.error || 'Operation failed')
+      }
+    } catch (e) {
+      toast.error('Network error')
+    }
+  }
+
+  const handleDeleteTemplate = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this template?')) return
+    try {
+      const res = await fetch(`/api/email-system/templates?templateId=${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer YWRtaW4=' }
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Template deleted')
+        fetchTemplates()
+      }
+    } catch (e) {
+      toast.error('Failed to delete')
+    }
+  }
 
   useEffect(() => {
     if (!selectedAccount) return
@@ -382,8 +460,6 @@ export default function MailSystemPage() {
     setSelectedEmail(null)
   }
 
-
-
   const fetchDrafts = async () => {
     if (!selectedAccount) return
     try {
@@ -398,8 +474,6 @@ export default function MailSystemPage() {
       console.error('Failed to fetch drafts:', error)
     }
   }
-
-
 
   const loadDraft = (draft: any) => {
     openCompose({
@@ -609,17 +683,10 @@ export default function MailSystemPage() {
   }
 
 
-
-
-
-
   const currentAccount = accounts.find(a => a.id === selectedAccount)
-  const unreadCount = emails.filter(e => isUnread(e.uid)).length
 
   return (
     <AdminLayout>
-
-
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
         {/* Modern Header */}
         <div className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
@@ -684,6 +751,10 @@ export default function MailSystemPage() {
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  deleteAccount(acc.id)
+                                }}
                                 className="p-2 hover:bg-[#FFECEC] hover:text-[#D11A2A] rounded transition-all duration-200"
                                 title="Delete account"
                               >
@@ -712,78 +783,90 @@ export default function MailSystemPage() {
                   <span className="hidden sm:inline">Inbox</span> ({emails.length})
                 </button>
                 <button
+                  onClick={() => setView('templates')}
+                  className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'templates' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
+                    }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span className="hidden sm:inline">Templates</span>
+                </button>
+                <button
                   onClick={() => openCompose()}
                   className="px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent hover:text-black"
                 >
                   <Edit className="w-4 h-4" />
                   <span className="hidden sm:inline">Compose</span>
                 </button>
-                <button
-                  onClick={() => { }}
-                  className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 relative ${false ? 'bg-gray-100 text-black border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
-                    }`}
-                >
-                  <FileText className="w-4 h-4" />
-                  Drafts (0)
-                </button>
               </div>
 
-              {view === 'inbox' && (
-                <div className="flex items-center gap-2 mr-4">
-                  {bulkMode && selectedEmails.size > 0 ? (
-                    <>
-                      <span className="text-sm font-bold text-gray-700">{selectedEmails.size} selected</span>
-                      <button
-                        onClick={bulkMarkAsRead}
-                        className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E6F7F0] text-[#0F5132] text-sm font-bold rounded-lg hover:brightness-95"
-                      >
-                        <MailOpen className="w-4 h-4" />
-                        Mark Read
-                      </button>
-                      <button
-                        onClick={bulkMarkAsUnread}
-                        className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E8F0FF] text-[#1E3A8A] text-sm font-bold rounded-lg hover:brightness-95"
-                      >
-                        <MailX className="w-4 h-4" />
-                        Mark Unread
-                      </button>
-                      <button
-                        onClick={bulkDelete}
-                        className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#FFE5E5] text-[#7F1D1D] text-sm font-bold rounded-lg hover:brightness-95"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={toggleBulkMode}
-                        className={`btn-smooth px-4 py-2 flex items-center gap-2 border-2 text-sm font-bold rounded-lg ${bulkMode
-                          ? 'border-black bg-[#F2F2F2]'
-                          : 'border-[#E5E7EB] hover:border-black'
-                          }`}
-                      >
-                        {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-                        {bulkMode ? 'Exit Bulk' : 'Select'}
-                      </button>
-                      <button
-                        onClick={() => syncEmails(true)}
-                        disabled={syncing}
-                        className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#0B0B0B] text-white text-sm font-bold rounded-lg hover:bg-[#1A1A1A] disabled:bg-gray-400"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${syncing ? 'smooth-spin' : ''}`} />
-                        Refresh
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
+              <div className="flex items-center gap-2 mr-4">
+                {view === 'templates' ? (
+                  <button
+                    onClick={() => {
+                      setEditingTemplate(null)
+                      setTemplateForm({ name: '', subject: '', bodyText: '', category: 'General', isShared: false })
+                      setShowTemplateModal(true)
+                    }}
+                    className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-black text-white text-sm font-bold rounded-lg hover:bg-zinc-800 transition-all shadow-md active:scale-95"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Template
+                  </button>
+                ) : (
+                  <>
+                    {bulkMode && selectedEmails.size > 0 ? (
+                      <>
+                        <span className="text-sm font-bold text-gray-700">{selectedEmails.size} selected</span>
+                        <button
+                          onClick={bulkMarkAsRead}
+                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E6F7F0] text-[#0F5132] text-sm font-bold rounded-lg hover:brightness-95"
+                        >
+                          <MailOpen className="w-4 h-4" />
+                          Mark Read
+                        </button>
+                        <button
+                          onClick={bulkMarkAsUnread}
+                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E8F0FF] text-[#1E3A8A] text-sm font-bold rounded-lg hover:brightness-95"
+                        >
+                          <MailX className="w-4 h-4" />
+                          Mark Unread
+                        </button>
+                        <button
+                          onClick={bulkDelete}
+                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#FFE5E5] text-[#7F1D1D] text-sm font-bold rounded-lg hover:brightness-95"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={toggleBulkMode}
+                          className={`btn-smooth px-4 py-2 flex items-center gap-2 border-2 text-sm font-bold rounded-lg ${bulkMode
+                            ? 'border-black bg-[#F2F2F2]'
+                            : 'border-[#E5E7EB] hover:border-black'
+                            }`}
+                        >
+                          {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                          {bulkMode ? 'Exit Bulk' : 'Select'}
+                        </button>
+                        <button
+                          onClick={() => syncEmails(true)}
+                          disabled={syncing}
+                          className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#0B0B0B] text-white text-sm font-bold rounded-lg hover:bg-[#1A1A1A] disabled:bg-gray-400"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${syncing ? 'smooth-spin' : ''}`} />
+                          Refresh
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Always show inbox content/filters, logic handled by state */}
-            {true && (
+            {view === 'inbox' && (
               <>
                 <div className="border-b border-gray-border p-4 bg-gray-50">
                   <div className="flex gap-3 mb-3">
@@ -896,11 +979,6 @@ export default function MailSystemPage() {
                           </button>
                         </>
                       )}
-                      {hasActiveFilters && (
-                        <p className="text-xs text-blue-600 font-bold">
-                          {emails.length - filteredEmails.length} hidden
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -925,7 +1003,7 @@ export default function MailSystemPage() {
                         </div>
                       </div>
                     ) : (
-                      filteredEmails.map((email, idx) => {
+                      filteredEmails.map((email) => {
                         const unread = isUnread(email.uid)
                         const sent = isSent(email)
 
@@ -1030,10 +1108,81 @@ export default function MailSystemPage() {
                     )}
                   </div>
                 </div>
-
               </>
             )}
 
+            {view === 'templates' && (
+              <div className="divide-y divide-gray-100 max-h-[calc(100vh-320px)] overflow-y-auto bg-white custom-scrollbar">
+                {loadingTemplates ? (
+                  <div className="p-20 text-center text-gray-400 animate-pulse">
+                    <RefreshCw className="w-12 h-12 mx-auto mb-4 smooth-spin opacity-20" />
+                    <p className="font-bold tracking-widest uppercase text-xs">Loading Templates...</p>
+                  </div>
+                ) : templates.length === 0 ? (
+                  <div className="p-20 text-center text-gray-400">
+                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="font-bold tracking-widest uppercase text-xs">No templates found</p>
+                    <button
+                      onClick={() => {
+                        setEditingTemplate(null)
+                        setTemplateForm({ name: '', subject: '', bodyText: '', category: 'General', isShared: false })
+                        setShowTemplateModal(true)
+                      }}
+                      className="mt-4 text-black font-bold underline"
+                    >
+                      Create your first template
+                    </button>
+                  </div>
+                ) : (
+                  templates.map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      className="group px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-all duration-200"
+                    >
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center flex-shrink-0 text-zinc-600">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-black text-black text-sm">{tpl.name}</div>
+                          <div className="text-xs text-zinc-500 truncate">{tpl.subject || '(No Subject)'}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded font-bold uppercase">{tpl.category || 'General'}</span>
+                            <span className="text-[10px] text-zinc-400 flex items-center gap-1">
+                              <Clock className="w-2 h-2" /> Used {tpl.usageCount} times
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button
+                          onClick={() => {
+                            setEditingTemplate(tpl)
+                            setTemplateForm({
+                              name: tpl.name,
+                              subject: tpl.subject || '',
+                              bodyText: tpl.body || '',
+                              category: tpl.category || 'General',
+                              isShared: tpl.isShared
+                            })
+                            setShowTemplateModal(true)
+                          }}
+                          className="p-2 hover:bg-zinc-100 rounded-md text-zinc-400 hover:text-black transition-all"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          className="p-2 hover:bg-red-50 rounded-md text-zinc-400 hover:text-red-500 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1104,7 +1253,7 @@ export default function MailSystemPage() {
 
         {/* Edit Account Modal */}
         {showEditModal && editingAccount && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ animation: 'fadeIn 0.2s' }}>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="modal-animate bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-black">Edit Email Account</h2>
@@ -1143,7 +1292,7 @@ export default function MailSystemPage() {
                   </div>
                   <div>
                     <label className="block font-bold text-sm mb-2">SMTP Port</label>
-                    <input type="number" value={editingAccount.smtpPort} onChange={(e) => setEditingAccount({ ...editingAccount, smtpPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                    <input type="number" value={editingAccount.smtpPort} onChange={(e) => setEditingAccount({ ...editingAccount, smtpPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200" />
                   </div>
                 </div>
 
@@ -1160,6 +1309,97 @@ export default function MailSystemPage() {
           </div>
         )}
 
+        {/* Template Modal */}
+        {showTemplateModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scaleIn">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-zinc-50">
+                <h3 className="text-lg font-black text-black uppercase tracking-tight">
+                  {editingTemplate ? 'Edit Template' : 'New Template'}
+                </h3>
+                <button onClick={() => setShowTemplateModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-all">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-zinc-400 mb-1.5">Template Name</label>
+                  <input
+                    type="text"
+                    value={templateForm.name}
+                    onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                    placeholder="e.g. Welcome Email"
+                    className="w-full px-4 py-3 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-zinc-400 mb-1.5">Default Subject</label>
+                  <input
+                    type="text"
+                    value={templateForm.subject}
+                    onChange={(e) => setTemplateForm({ ...templateForm, subject: e.target.value })}
+                    placeholder="The subject line of the email"
+                    className="w-full px-4 py-3 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-zinc-400 mb-1.5">Category</label>
+                    <select
+                      value={templateForm.category}
+                      onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                      className="w-full px-4 py-3 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all font-medium"
+                    >
+                      <option value="General">General</option>
+                      <option value="Sales">Sales</option>
+                      <option value="Support">Support</option>
+                      <option value="Follow-up">Follow-up</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end pb-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={templateForm.isShared}
+                        onChange={(e) => setTemplateForm({ ...templateForm, isShared: e.target.checked })}
+                        className="w-4 h-4 rounded text-black focus:ring-black"
+                      />
+                      <span className="text-sm font-bold">Shared with team</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-zinc-400 mb-1.5">Email Content</label>
+                  <textarea
+                    value={templateForm.bodyText}
+                    onChange={(e) => setTemplateForm({ ...templateForm, bodyText: e.target.value })}
+                    className="w-full h-64 px-4 py-3 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all font-medium resize-none"
+                    placeholder="Write your email content here..."
+                  />
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-zinc-50 border-t border-gray-100 flex gap-3">
+                <button
+                  onClick={handleCreateOrUpdateTemplate}
+                  className="flex-1 px-6 py-3 bg-black text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-zinc-800 transition-all shadow-lg active:scale-95"
+                >
+                  {editingTemplate ? 'Update Template' : 'Save Template'}
+                </button>
+                <button
+                  onClick={() => setShowTemplateModal(false)}
+                  className="px-6 py-3 border-2 border-zinc-200 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-white transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )

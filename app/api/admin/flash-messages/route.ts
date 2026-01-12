@@ -12,6 +12,8 @@ export async function GET(request: Request) {
             return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
         }
 
+        const p = prisma as any;
+
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type');
         const withUserId = searchParams.get('withUserId');
@@ -19,7 +21,7 @@ export async function GET(request: Request) {
         // Case 1: Fetch Chat History with specific user
         if (type === 'chat' && withUserId) {
             const partnerId = parseInt(withUserId);
-            const messages = await prisma.flashMessage.findMany({
+            const messages = await p.flashMessage.findMany({
                 where: {
                     type: 'chat',
                     OR: [
@@ -39,7 +41,7 @@ export async function GET(request: Request) {
 
         // Case 1.5: Group Chat (General)
         if (type === 'group_chat') {
-            const messages = await prisma.flashMessage.findMany({
+            const messages = await p.flashMessage.findMany({
                 where: {
                     type: 'group_chat',
                     receiverId: null
@@ -55,7 +57,7 @@ export async function GET(request: Request) {
 
         // Case 2: Fetch Unread Chats
         if (type === 'unread_chats') {
-            const messages = await prisma.flashMessage.findMany({
+            const messages = await p.flashMessage.findMany({
                 where: {
                     receiverId: session.id,
                     isRead: false,
@@ -72,7 +74,7 @@ export async function GET(request: Request) {
             // so for now we just fetch recent 100 messages involving user and client-side distinct?
             // Or we just return list of admins (handled by frontend for now).
             // Let's sticking to fetching unread chats count per user?
-            const unreadCounts = await prisma.flashMessage.groupBy({
+            const unreadCounts = await p.flashMessage.groupBy({
                 by: ['senderId'],
                 where: {
                     receiverId: session.id,
@@ -86,7 +88,7 @@ export async function GET(request: Request) {
 
         // Case 4: History of Flash Messages (Broadcasts)
         if (type === 'history') {
-            const messages = await prisma.flashMessage.findMany({
+            const messages = await p.flashMessage.findMany({
                 where: {
                     type: 'flash',
                     OR: [
@@ -106,7 +108,7 @@ export async function GET(request: Request) {
 
         // Default: Fetch unread FLASH messages (for Popup)
         // IMPORTANT: Filter by type='flash' so chats don't pop up
-        const messages = await prisma.flashMessage.findMany({
+        const messages = await p.flashMessage.findMany({
             where: {
                 receiverId: session.id,
                 isRead: false,
@@ -134,6 +136,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
         }
 
+        const p = prisma as any;
+
         const body = await request.json();
         const { receiverId, message, parentMessageId, type = 'flash', attachmentUrl, attachmentType } = body;
 
@@ -142,7 +146,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
         }
 
-        const newMessage = await prisma.flashMessage.create({
+        const newMessage = await p.flashMessage.create({
             data: {
                 senderId: session.id,
                 receiverId: receiverId ? parseInt(receiverId) : null,
@@ -174,6 +178,8 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
         }
 
+        const p = prisma as any;
+
         const body = await request.json();
         const { id } = body;
 
@@ -182,7 +188,7 @@ export async function PUT(request: Request) {
         }
 
         // Verify ownership (only receiver can mark/read)
-        const message = await prisma.flashMessage.findUnique({ where: { id } });
+        const message = await p.flashMessage.findUnique({ where: { id } });
         if (!message) {
             return NextResponse.json({ success: false, message: 'Message not found' }, { status: 404 });
         }
@@ -192,7 +198,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
         }
 
-        const updated = await prisma.flashMessage.update({
+        const updated = await p.flashMessage.update({
             where: { id },
             data: { isRead: true, readAt: new Date() }
         });
