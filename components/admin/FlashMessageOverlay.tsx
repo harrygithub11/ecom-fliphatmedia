@@ -57,7 +57,7 @@ export function FlashMessageOverlay() {
                         <div>
                             <h2 className="text-2xl font-black uppercase tracking-wider">Priority Message</h2>
                             <div className="flex items-center gap-2 text-red-100 text-sm font-medium">
-                                <span>From: {currentMessage.sender.name || 'Admin'}</span>
+                                <span>From: {currentMessage.sender?.name || 'Admin'}</span>
                                 <span>•</span>
                                 <Clock className="w-3 h-3" />
                                 <span>{new Date(currentMessage.sentAt).toLocaleTimeString()}</span>
