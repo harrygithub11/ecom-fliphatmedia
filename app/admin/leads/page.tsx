@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Customer {
     id: number;
@@ -82,7 +83,7 @@ export default function LeadsPage() {
     const [deleteLeadId, setDeleteLeadId] = useState<number | null>(null);
 
     // Team members for assignment
-    const [admins, setAdmins] = useState<{ id: number, name: string, email: string }[]>([]);
+    const [admins, setAdmins] = useState<{ id: number, name: string, email: string, avatar_url?: string }[]>([]);
     const [currentUser, setCurrentUser] = useState<{ id: number, name: string, email: string } | null>(null);
     const [showMyLeadsOnly, setShowMyLeadsOnly] = useState(false);
 
@@ -587,16 +588,22 @@ export default function LeadsPage() {
                                                 defaultValue={lead.owner}
                                                 onValueChange={(val) => updateLead(lead.id, 'owner', val)}
                                             >
-                                                <SelectTrigger className="h-8 w-[140px] border-none shadow-none bg-transparent hover:bg-muted p-1">
+                                                <SelectTrigger className="h-8 w-fit min-w-[140px] border-none shadow-none bg-transparent hover:bg-muted p-1 px-2 rounded-full ring-0 focus:ring-0">
                                                     <SelectValue placeholder="Unassigned" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="unassigned">
-                                                        <span className="text-muted-foreground italic">Unassigned</span>
+                                                        <span className="text-muted-foreground italic pl-2">Unassigned</span>
                                                     </SelectItem>
                                                     {admins.map(admin => (
                                                         <SelectItem key={admin.id} value={admin.name}>
-                                                            {admin.name}
+                                                            <div className="flex items-center gap-2">
+                                                                <Avatar className="h-5 w-5">
+                                                                    <AvatarImage src={admin.avatar_url || ''} />
+                                                                    <AvatarFallback className="text-[10px]">{admin.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                                </Avatar>
+                                                                <span>{admin.name}</span>
+                                                            </div>
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
