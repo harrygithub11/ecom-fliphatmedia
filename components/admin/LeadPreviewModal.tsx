@@ -155,14 +155,45 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                             </div>
 
                             <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-muted-foreground">Owner:</span>
+                                <span className="text-xs text-muted-foreground hidden sm:inline-block">Owner:</span>
                                 <Select value={lead?.owner} onValueChange={(v) => handleUpdate('owner', v)}>
-                                    <SelectTrigger className="h-7 text-xs border-none bg-transparent hover:bg-muted/50 p-1 px-2 rounded-full shadow-none w-fit min-w-[100px] justify-end">
-                                        <SelectValue placeholder="Unassigned" />
+                                    <SelectTrigger className="h-8 text-xs border-none bg-transparent hover:bg-muted/50 p-1 px-2 rounded-full shadow-none w-fit min-w-[fit-content] justify-end gap-2 ring-0 focus:ring-0">
+                                        <SelectValue placeholder="Unassigned">
+                                            {lead?.owner && lead.owner !== 'unassigned' ? (
+                                                <div className="flex items-center gap-2">
+                                                    {(() => {
+                                                        const admin = admins.find(a => a.name === lead.owner);
+                                                        return (
+                                                            <>
+                                                                <Avatar className="h-5 w-5">
+                                                                    <AvatarImage src={admin?.avatar_url} />
+                                                                    <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                                                                        {lead.owner.substring(0, 2).toUpperCase()}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <span className="font-medium">{lead.owner}</span>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground italic">Unassigned</span>
+                                            )}
+                                        </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="unassigned">Unassigned</SelectItem>
-                                        {admins.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
+                                        {admins.map(a => (
+                                            <SelectItem key={a.id} value={a.name}>
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-5 w-5">
+                                                        <AvatarImage src={a.avatar_url} />
+                                                        <AvatarFallback className="text-[9px]">{a.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span>{a.name}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -248,7 +279,7 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                                             }
                                         }}
                                         onBlur={(e) => handleUpdate('notes', e.target.value)}
-                                        className="min-h-[300px] border-none focus-visible:ring-0 bg-transparent resize-none p-0 text-base leading-relaxed"
+                                        className="min-h-[300px] border-none focus-visible:ring-0 bg-transparent resize-none p-0 text-base leading-relaxed placeholder:text-muted-foreground/50"
                                         placeholder="Start typing complex notes here..."
                                     />
                                 </div>
