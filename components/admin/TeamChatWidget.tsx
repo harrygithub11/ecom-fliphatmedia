@@ -109,10 +109,18 @@ export function TeamChatWidget() {
         return () => clearInterval(interval);
     }, [isOpen, activeUser, fetchMessages, markAsRead]);
 
-    // Auto-scroll to bottom of chat
+    // Smart Auto-scroll
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        const scrollContainer = scrollRef.current;
+        if (!scrollContainer) return;
+
+        // If messages just loaded (or first load), force scroll
+        // Or if user was already near bottom (within 100px), keep them at bottom
+        // This prevents snapping back if they are reading old messages
+        const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 200;
+
+        if (isNearBottom) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
         }
     }, [messages]);
 
