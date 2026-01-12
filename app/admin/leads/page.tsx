@@ -274,11 +274,26 @@ export default function LeadsPage() {
     const filtered = leads.filter(l => {
         // Search filter
         const lowerSearch = searchTerm.toLowerCase();
+
+        // Parse tags if they exist
+        let tagMatch = false;
+        try {
+            if (l.tags) {
+                const tagsArray = typeof l.tags === 'string' ? JSON.parse(l.tags) : l.tags;
+                if (Array.isArray(tagsArray)) {
+                    tagMatch = tagsArray.some((tag: string) => tag.toLowerCase().includes(lowerSearch));
+                }
+            }
+        } catch (e) {
+            // If tags parsing fails, just skip tag matching
+        }
+
         const matchesSearch =
             l.name?.toLowerCase().includes(lowerSearch) ||
             l.email?.toLowerCase().includes(lowerSearch) ||
             l.phone?.toLowerCase().includes(lowerSearch) ||
-            l.location?.toLowerCase().includes(lowerSearch);
+            l.location?.toLowerCase().includes(lowerSearch) ||
+            tagMatch;
 
         // My Leads filter
         const matchesOwner = !showMyLeadsOnly || (currentUser && l.owner === currentUser.name);
