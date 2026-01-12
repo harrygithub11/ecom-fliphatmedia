@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -15,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import {
     CheckCircle2, Clock, Phone, MessageSquare, FileText, User, RefreshCw, Plus,
     MoreHorizontal, Pencil, Trash2, Calendar, AlertCircle, Activity, UserCheck,
-    ArrowUpRight, Settings, Circle, ChevronDown, ListTodo, Package, History, Server
+    ArrowUpRight, Settings, Circle, ChevronDown, ListTodo, Package, History, Server, Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { KanbanBoard } from '@/components/admin/KanbanBoard';
@@ -73,6 +74,9 @@ export default function WorkspacePage() {
     const [userFilter, setUserFilter] = useState('all');
     const [activityUserFilter, setActivityUserFilter] = useState('all');
     const [activityTypeFilter, setActivityTypeFilter] = useState('all');
+    const [activitySearchTerm, setActivitySearchTerm] = useState('');
+    const [showActivitySuggestions, setShowActivitySuggestions] = useState(false);
+    const activitySearchWrapperRef = useRef<HTMLDivElement>(null);
     const [viewMode, setViewMode] = usePersistentState<'list' | 'kanban' | 'clickup'>('workspace.viewMode', 'clickup');
     const [activeTab, setActiveTab] = usePersistentState<string>('workspace.activeTab', 'tasks');
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -140,6 +144,17 @@ export default function WorkspacePage() {
     useEffect(() => {
         fetchTimeline();
     }, [activityUserFilter, activityTypeFilter]);
+
+    // Handle Click Outside for Activity Suggestions
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (activitySearchWrapperRef.current && !activitySearchWrapperRef.current.contains(event.target as Node)) {
+                setShowActivitySuggestions(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [activitySearchWrapperRef]);
 
     const openCreateTaskDialog = (status?: string) => {
         setNewTask(prev => ({ ...prev, status: status || 'open' }));
@@ -822,7 +837,52 @@ export default function WorkspacePage() {
                                 <CardDescription>Real-time log of team interactions and updates</CardDescription>
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
+                                {/* Customer Search */}
+                                <div className="relative w-72" ref={activitySearchWrapperRef}>
+                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground z-10" />
+                                    <Input
+                                        placeholder="Search customers..."
+                                        className="pl-8 h-9 bg-white dark:bg-zinc-900"
+                                        value={activitySearchTerm}
+                                        onChange={(e) => {
+                                            setActivitySearchTerm(e.target.value);
+                                            setShowActivitySuggestions(true);
+                                        }}
+                                        onFocus={() => setShowActivitySuggestions(true)}
+                                    />
+                                    {showActivitySuggestions && activitySearchTerm && (() => {
+                                        const filtered = leads.filter(l =>
+                                            l.name?.toLowerCase().includes(activitySearchTerm.toLowerCase()) ||
+                                            l.email?.toLowerCase().includes(activitySearchTerm.toLowerCase())
+                                        ).slice(0, 5);
+                                        return filtered.length > 0 && (
+                                            <div className="absolute top-full left-0 w-full mt-1 bg-white border border-zinc-200 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 max-h-[400px] overflow-y-auto">
+                                                {filtered.map(lead => (
+                                                    <div
+                                                        key={lead.id}
+                                                        className="px-4 py-3 hover:bg-zinc-50 cursor-pointer flex items-center gap-3 transition-colors border-b last:border-b-0"
+                                                        onClick={() => {
+                                                            window.location.href = `/admin/leads/${lead.id}`;
+                                                            setShowActivitySuggestions(false);
+                                                        }}
+                                                    >
+                                                        <Avatar className="h-10 w-10 shrink-0">
+                                                            <AvatarImage src={''} />
+                                                            <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+                                                                {lead.name.substring(0, 2).toUpperCase()}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex flex-col flex-1 min-w-0">
+                                                            <span className="font-bold text-sm text-black truncate">{lead.name}</span>
+                                                            <span className="text-xs text-zinc-400 truncate">{lead.email}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
                                 <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
                                     <SelectTrigger className="w-[130px] bg-white dark:bg-zinc-900 h-9 text-xs">
                                         <SelectValue placeholder="All Activity" />
