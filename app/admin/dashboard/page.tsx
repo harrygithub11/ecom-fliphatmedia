@@ -148,9 +148,9 @@ export default function Dashboard() {
                             {stats.activity.map((item: any, i) => (
                                 <div key={i} className="flex items-start gap-3 pb-3 border-b last:border-0">
                                     <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${item.status === 'delivered' ? 'bg-green-500' :
-                                            item.status === 'processing' ? 'bg-blue-500' :
-                                                item.status === 'paid' ? 'bg-purple-500' :
-                                                    item.status === 'payment_failed' ? 'bg-red-500' : 'bg-gray-500'
+                                        item.status === 'processing' ? 'bg-blue-500' :
+                                            item.status === 'paid' ? 'bg-purple-500' :
+                                                item.status === 'payment_failed' ? 'bg-red-500' : 'bg-gray-500'
                                         }`}></div>
                                     <div className="flex-1 space-y-1">
                                         <p className="text-sm font-medium leading-none">
@@ -165,6 +165,29 @@ export default function Dashboard() {
                                 </div>
                             ))}
                         </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Meetings Widget */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                <Card className="col-span-full border-none shadow-xl bg-gradient-to-r from-zinc-900 to-black text-white rounded-2xl overflow-hidden group">
+                    <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors pointer-events-none" />
+                    <CardContent className="p-8 flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-6">
+                            <div className="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center border border-white/5 backdrop-blur-md">
+                                <Video className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black uppercase tracking-widest">Video Center</h3>
+                                <p className="text-zinc-400 text-sm font-medium mt-1">Start a secure, encrypted meeting with your team or clients in one click.</p>
+                            </div>
+                        </div>
+                        <Link href="/admin/meetings">
+                            <Button className="h-12 px-8 rounded-full bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-widest text-xs">
+                                Launch Meetings Room
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
             </div>

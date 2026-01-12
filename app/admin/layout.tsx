@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, ListTodo, Settings, LogOut, UserCog, FileText, Briefcase, Sparkles, TrendingUp, Target, Mail, PanelLeft, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, ListTodo, Settings, LogOut, UserCog, FileText, Briefcase, Sparkles, TrendingUp, Target, Mail, PanelLeft, ChevronLeft, ChevronRight, Menu, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/admin/NotificationBell';
 import { useState, useEffect } from 'react';
@@ -196,6 +196,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <NavItem href="/admin/emails" icon={<Mail className="w-5 h-5" />} label="Email Center" active={isActive('/admin/emails')} collapsed={sidebarCollapsed} />
                             <NavItem href="/admin/workspace" icon={<Briefcase className="w-5 h-5" />} label="Workspace" active={pathname.startsWith('/admin/workspace')} collapsed={sidebarCollapsed} />
                             <NavItem href="/admin/kanban" icon={<ListTodo className="w-5 h-5" />} label="Project Board" active={isActive('/admin/kanban')} collapsed={sidebarCollapsed} />
+                            <NavItem href="/admin/meetings" icon={<Video className="w-5 h-5" />} label="Video Center" active={isActive('/admin/meetings') || pathname.startsWith('/admin/meetings/')} collapsed={sidebarCollapsed} />
                             <NavItem href="/admin/pages" icon={<FileText className="w-5 h-5" />} label="Landing Pages" active={isActive('/admin/pages') || pathname.startsWith('/admin/pages/')} collapsed={sidebarCollapsed} />
                             <NavItem href="/admin/orders" icon={<ShoppingCart className="w-5 h-5" />} label="Orders & Payments" active={isActive('/admin/orders') || pathname.startsWith('/admin/orders/')} collapsed={sidebarCollapsed} />
                             <NavItem href="/admin/leads" icon={<Users className="w-5 h-5" />} label="Leads & Customers" active={isActive('/admin/leads')} collapsed={sidebarCollapsed} />

@@ -28,6 +28,7 @@ model Admin {
   sentFlashMessages     FlashMessage[] @relation("SentFlashMessages")
   receivedFlashMessages FlashMessage[] @relation("ReceivedFlashMessages")
   presence              UserPresence?
+  meetings              Meeting[]     @relation("AdminMeetings")
 
   @@map("admins")
 }
@@ -890,4 +891,22 @@ enum UserStatus {
   ONLINE
   OFFLINE
   AWAY
+}
+model Meeting {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  roomName    String    @unique
+  hostId      Int
+  status      String    @default("active")
+  startTime   DateTime  @default(now())
+  endTime     DateTime?
+  notes       String?   @db.LongText
+  
+  host        Admin     @relation("AdminMeetings", fields: [hostId], references: [id])
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("meetings")
 }
