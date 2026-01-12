@@ -119,6 +119,7 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
         tasks: Task[];
         timeline: Interaction[];
         files: FileItem[];
+        emails: any[];
     } | null>(null);
 
     // --- Dynamic Actions ---
@@ -1016,9 +1017,10 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                 <Card className="h-full flex flex-col shadow-none border-l-0 rounded-l-none bg-transparent">
                     <Tabs defaultValue="timeline" className="flex-1 flex flex-col h-full">
                         <div className="px-4 pt-4 shrink-0">
-                            <TabsList className="w-full grid grid-cols-2">
+                            <TabsList className="w-full grid grid-cols-3">
                                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
                                 <TabsTrigger value="files">Files</TabsTrigger>
+                                <TabsTrigger value="emails">Emails</TabsTrigger>
                             </TabsList>
                         </div>
 
@@ -1155,6 +1157,51 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
                                         </a>
                                     </div>
                                 ))}
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="emails" className="flex-1 flex flex-col h-full overflow-hidden">
+                            <div className="p-4 border-b bg-zinc-50/50 flex justify-between items-center shrink-0">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Email History</span>
+                                <Button size="sm" className="h-8 border-none bg-[#0B0B0B] text-white hover:bg-[#1A1A1A]" onClick={() => openCompose({ to: lead?.email, customerId: lead?.id })}>
+                                    <Plus className="w-4 h-4 mr-2" /> New Email
+                                </Button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {(data.emails || []).length === 0 ? (
+                                    <div className="text-center py-20 text-muted-foreground italic">No email history found.</div>
+                                ) : (
+                                    data.emails.map((email: any) => (
+                                        <div key={email.id} className="bg-white dark:bg-zinc-950 border rounded-xl p-4 shadow-sm hover:border-primary/30 transition-all group">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="flex flex-col">
+                                                    <Badge variant="outline" className={`w-fit text-[9px] h-4 mb-2 ${email.from.includes(lead.email) ? 'bg-zinc-100' : 'bg-primary/5 text-primary border-primary/20'}`}>
+                                                        {email.from.includes(lead.email) ? 'INCOMING' : 'OUTGOING'}
+                                                    </Badge>
+                                                    <h4 className="font-bold text-sm leading-tight group-hover:text-primary transition-colors">{email.subject || '(No Subject)'}</h4>
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{new Date(email.date).toLocaleDateString()}</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{email.textSnippet || email.text || 'No content preview'}</p>
+                                            <div className="flex justify-end pt-3 border-t border-zinc-100 dark:border-zinc-900/50 gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-100"
+                                                    onClick={() => {
+                                                        openCompose({
+                                                            to: email.from.includes(lead.email) ? email.from : email.to,
+                                                            subject: `Re: ${email.subject}`,
+                                                            body: `\n\n--- On ${new Date(email.date).toLocaleString()}, ${email.from} wrote: ---\n\n${email.textSnippet || email.text}`
+                                                        });
+                                                    }}
+                                                >
+                                                    <Rocket className="w-3 h-3 mr-2 text-primary" /> Reply
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </TabsContent>
                     </Tabs>
