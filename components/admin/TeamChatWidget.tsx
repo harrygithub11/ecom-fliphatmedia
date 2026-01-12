@@ -30,11 +30,22 @@ export function TeamChatWidget() {
             fetch('/api/admin/team')
                 .then(res => res.json())
                 .then(data => {
+                    let teamMembers = [];
                     if (Array.isArray(data)) {
-                        setUsers(data);
+                        teamMembers = data;
                     } else if (data.members && Array.isArray(data.members)) {
-                        setUsers(data.members);
+                        teamMembers = data.members;
                     }
+
+                    // Add Static Group Chat Option
+                    const groupOption: ChatUser = {
+                        id: -1, // Special ID for group
+                        name: "Team Group",
+                        email: "Everyone",
+                        avatar_url: "/group-icon-placeholder.png" // We can use icon fallback
+                    };
+
+                    setUsers([groupOption, ...teamMembers]);
                 })
                 .catch(() => { });
         }
@@ -45,27 +56,22 @@ export function TeamChatWidget() {
         let interval: NodeJS.Timeout;
         if (isOpen && activeUser) {
             const load = async () => {
-                const msgs = await fetchMessages('chat', activeUser.id);
+                const type = activeUser.id === -1 ? 'group_chat' : 'chat';
+                const userId = activeUser.id === -1 ? undefined : activeUser.id;
+
+                const msgs = await fetchMessages(type, userId);
                 setMessages(msgs);
 
-                // Auto-mark incoming unread messages as read
-                const unreadIncoming = msgs.filter((m: FlashMessage) => m.senderId === activeUser.id && !m.isRead);
-                if (unreadIncoming.length > 0) {
-                    // We mark them read one by one or we could add a bulk endpoint.
-                    // For now, let's just mark the last one read? No, all of them.
-                    // To avoid spamming, let's just use the `markAsRead` which takes an ID.
-                    // Ideally API should support bulk or we just loop. Loop is fine for small numbers.
-                    unreadIncoming.forEach((m: FlashMessage) => {
-                        // markAsRead (from hook) calls API and updates local state.
-                        // But we just updated local state with `setMessages(msgs)`.
-                        // We can just call API directly here to avoid re-rendering loop issues?
-                        // Or use the markAsRead from hook which is safe.
-                        markAsRead(m.id);
-                    });
+                // Auto-mark incoming unread messages as read (Only for direct chats)
+                if (type === 'chat') {
+                    const unreadIncoming = msgs.filter((m: FlashMessage) => m.senderId === activeUser.id && !m.isRead);
+                    if (unreadIncoming.length > 0) {
+                        unreadIncoming.forEach((m: FlashMessage) => markAsRead(m.id));
+                    }
                 }
             };
             load();
-            interval = setInterval(load, 3000); // Poll every 3s for chat
+            interval = setInterval(load, 3000); // Poll every 3s
         }
         return () => clearInterval(interval);
     }, [isOpen, activeUser, fetchMessages, markAsRead]);
@@ -81,11 +87,15 @@ export function TeamChatWidget() {
         if (!inputText.trim() || !activeUser) return;
         setLoading(true);
         try {
-            // Optimistic update? No, safer to wait for poll or response
-            await sendMessage(activeUser.id, inputText, undefined, 'chat');
+            const type = activeUser.id === -1 ? 'group_chat' : 'chat';
+            // Send 0 for group chat receiverId (API handles it)
+            await sendMessage(activeUser.id === -1 ? 0 : activeUser.id, inputText, undefined, type);
+
             setInputText('');
-            // Refresh immediately
-            const msgs = await fetchMessages('chat', activeUser.id);
+            // Refresh
+            const loadType = activeUser.id === -1 ? 'group_chat' : 'chat';
+            const loadId = activeUser.id === -1 ? undefined : activeUser.id;
+            const msgs = await fetchMessages(loadType, loadId);
             setMessages(msgs);
         } catch (error) {
             console.error(error);

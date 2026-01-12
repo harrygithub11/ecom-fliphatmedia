@@ -22,7 +22,7 @@ export function useFlashMessages() {
 
     const [unreadChatMessages, setUnreadChatMessages] = useState<FlashMessage[]>([]);
 
-    const fetchMessages = useCallback(async (type: 'flash' | 'chat' | 'history' | 'unread_chats' = 'flash', withUserId?: number) => {
+    const fetchMessages = useCallback(async (type: 'flash' | 'chat' | 'history' | 'unread_chats' | 'group_chat' = 'flash', withUserId?: number) => {
         try {
             let url = `/api/admin/flash-messages?type=${type}`;
             if (withUserId) url += `&withUserId=${withUserId}`;
@@ -47,7 +47,7 @@ export function useFlashMessages() {
         setUnreadChatMessages(msgs);
     }, [fetchMessages]);
 
-    const sendMessage = async (receiverId: number, message: string, parentMessageId?: string, type: 'flash' | 'chat' = 'flash') => {
+    const sendMessage = async (receiverId: number, message: string, parentMessageId?: string, type: 'flash' | 'chat' | 'group_chat' = 'flash') => {
         const res = await fetch('/api/admin/flash-messages', {
             method: 'POST',
             body: JSON.stringify({ receiverId, message, parentMessageId, type }),

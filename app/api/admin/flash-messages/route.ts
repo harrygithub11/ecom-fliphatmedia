@@ -33,6 +33,22 @@ export async function GET(request: Request) {
                     sender: { select: { id: true, name: true, avatar_url: true } },
                     receiver: { select: { id: true, name: true, avatar_url: true } }
                 },
+                orderBy: { sentAt: 'asc' },
+                take: 100
+            });
+            return NextResponse.json({ success: true, messages });
+        }
+
+        // Case 1.5: Group Chat (General)
+        if (type === 'group_chat') {
+            const messages = await prisma.flashMessage.findMany({
+                where: {
+                    type: 'group_chat',
+                    receiverId: null
+                },
+                include: {
+                    sender: { select: { id: true, name: true, avatar_url: true } }
+                },
                 orderBy: { sentAt: 'asc' }, // Chat order
                 take: 100
             });
@@ -123,17 +139,18 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { receiverId, message, parentMessageId, type = 'flash' } = body;
 
-        if (!receiverId || !message) {
+        // Validation: receiverId is required unless it's a group chat
+        if ((!receiverId && type !== 'group_chat') || !message) {
             return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
         }
 
         const newMessage = await prisma.flashMessage.create({
             data: {
                 senderId: session.id,
-                receiverId: parseInt(receiverId),
+                receiverId: receiverId ? parseInt(receiverId) : null,
                 message,
                 parentMessageId,
-                type, // 'flash' or 'chat'
+                type, // 'flash' or 'chat' or 'group_chat'
                 isRead: false
             },
             include: {
