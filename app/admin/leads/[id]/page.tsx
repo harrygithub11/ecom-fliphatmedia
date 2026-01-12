@@ -1014,8 +1014,8 @@ export default function LeadProfilePage({ params }: { params: { id: string } }) 
 
             {/* RIGHT COLUMN: Timeline & Communication (4 Cols) */}
             <div className="col-span-4 flex flex-col h-full overflow-hidden">
-                <Card className="h-full flex flex-col shadow-none border-l-0 rounded-l-none bg-transparent">
-                    <Tabs defaultValue="timeline" className="flex-1 flex flex-col h-full">
+                <Card className="h-full flex flex-col shadow-none border-l-0 rounded-l-none bg-transparent p-0">
+                    <Tabs defaultValue="timeline" className="flex-1 flex flex-col h-full overflow-hidden">
                         <div className="px-4 pt-4 shrink-0">
                             <TabsList className="w-full grid grid-cols-3">
                                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
