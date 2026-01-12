@@ -169,13 +169,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             </span>
                         )}
                         {sidebarCollapsed && (
-                            <span className="font-bold text-xl tracking-tight text-primary mx-auto">F<span className="text-foreground">C</span></span>
+                            <img
+                                src="/Photos/logo.png"
+                                alt="Logo"
+                                className="h-10 w-10 object-contain mx-auto"
+                            />
                         )}
 
                         <Button
                             variant="ghost"
                             size="icon"
-                            className={cn("h-8 w-8 text-zinc-400 hover:text-foreground", sidebarCollapsed && "mx-auto mt-2 absolute -right-3 top-6 bg-white dark:bg-zinc-800 border shadow-sm rounded-full h-6 w-6 z-50")}
+                            className={cn("h-8 w-8 text-zinc-400 hover:text-foreground", sidebarCollapsed && "mx-auto absolute -right-3 top-2 bg-white dark:bg-zinc-800 border shadow-sm rounded-full h-6 w-6 z-50")}
                             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                         >
                             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
