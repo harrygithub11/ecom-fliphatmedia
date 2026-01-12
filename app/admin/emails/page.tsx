@@ -472,7 +472,6 @@ export default function MailSystemPage() {
           setAttachments([])
           setCurrentDraftId(null)
           closeCompose() // Modal closed via global context now
-          // Reload inbox immediately to show sent email
           loadInbox()
           fetchDrafts()
         }, 800)
@@ -934,7 +933,6 @@ export default function MailSystemPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-black text-black tracking-tight">Emails</h1>
-                <p className="text-sm text-gray-600 mt-0.5">Enterprise Email Management</p>
               </div>
 
               <div className="flex items-center gap-3">
@@ -1008,910 +1006,134 @@ export default function MailSystemPage() {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="px-6 py-6">
-            <div className="grid sm:grid-cols-3 gap-6 mb-8">
-              {[
-                { icon: Inbox, label: 'Total Emails', value: emails.length },
-                { icon: Mail, label: 'Unread', value: unreadCount },
-                { icon: RefreshCw, label: 'Auto-Sync', value: 'Every 10s' }
-              ].map((stat, idx) => (
-                <div
-                  key={stat.label}
-                  className="bg-white border border-gray-200 p-6 rounded-xl hover:shadow-lg transition-all duration-300"
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg">
+            <div className="border-b border-gray-200 flex justify-between items-center">
+              <div className="flex">
+                <button
+                  onClick={() => setView('inbox')}
+                  className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'inbox' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
+                    }`}
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <stat.icon className="w-5 h-5 text-gray-600" />
-                    <span className="text-xs font-bold tracking-wider uppercase text-gray-500">{stat.label}</span>
-                  </div>
-                  <div className="text-3xl font-black text-black">{stat.value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg">
-              <div className="border-b border-gray-200 flex justify-between items-center">
-                <div className="flex">
-                  <button
-                    onClick={() => setView('inbox')}
-                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 ${view === 'inbox' ? 'bg-black text-white border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
-                      }`}
-                  >
-                    <Inbox className="w-4 h-4" />
-                    <span className="hidden sm:inline">Inbox</span> ({emails.length})
-                  </button>
-                  <button
-                    onClick={() => openCompose()}
-                    className="px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent hover:text-black"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span className="hidden sm:inline">Compose</span>
-                  </button>
-                  <button
-                    onClick={() => setShowDrafts(!showDrafts)}
-                    className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 relative ${showDrafts ? 'bg-gray-100 text-black border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
-                      }`}
-                  >
-                    <FileText className="w-4 h-4" />
-                    Drafts ({drafts.length})
-                  </button>
-                </div>
-
-                {view === 'inbox' && (
-                  <div className="flex items-center gap-2 mr-4">
-                    {bulkMode && selectedEmails.size > 0 ? (
-                      <>
-                        <span className="text-sm font-bold text-gray-700">{selectedEmails.size} selected</span>
-                        <button
-                          onClick={bulkMarkAsRead}
-                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E6F7F0] text-[#0F5132] text-sm font-bold rounded-lg hover:brightness-95"
-                        >
-                          <MailOpen className="w-4 h-4" />
-                          Mark Read
-                        </button>
-                        <button
-                          onClick={bulkMarkAsUnread}
-                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E8F0FF] text-[#1E3A8A] text-sm font-bold rounded-lg hover:brightness-95"
-                        >
-                          <MailX className="w-4 h-4" />
-                          Mark Unread
-                        </button>
-                        <button
-                          onClick={bulkDelete}
-                          className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#FFE5E5] text-[#7F1D1D] text-sm font-bold rounded-lg hover:brightness-95"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={toggleBulkMode}
-                          className={`btn-smooth px-4 py-2 flex items-center gap-2 border-2 text-sm font-bold rounded-lg ${bulkMode
-                            ? 'border-black bg-[#F2F2F2]'
-                            : 'border-[#E5E7EB] hover:border-black'
-                            }`}
-                        >
-                          {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-                          {bulkMode ? 'Exit Bulk' : 'Select'}
-                        </button>
-                        <button
-                          onClick={() => syncEmails(true)}
-                          disabled={syncing}
-                          className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#0B0B0B] text-white text-sm font-bold rounded-lg hover:bg-[#1A1A1A] disabled:bg-gray-400"
-                        >
-                          <RefreshCw className={`w-4 h-4 ${syncing ? 'smooth-spin' : ''}`} />
-                          Refresh
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-
+                  <Inbox className="w-4 h-4" />
+                  <span className="hidden sm:inline">Inbox</span> ({emails.length})
+                </button>
+                <button
+                  onClick={() => openCompose()}
+                  className="px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent hover:text-black"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span className="hidden sm:inline">Compose</span>
+                </button>
+                <button
+                  onClick={() => setShowDrafts(!showDrafts)}
+                  className={`px-6 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-300 flex items-center gap-2 relative ${showDrafts ? 'bg-gray-100 text-black border-b-2 border-[#D11A2A]' : 'text-gray-600 hover:bg-[#F5F5F5] border-b-2 border-transparent'
+                    }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  Drafts ({drafts.length})
+                </button>
               </div>
 
-              {showDrafts && (
-                <div className="border-b border-[#E5E7EB] bg-gray-50 p-4">
-                  <div className="max-w-4xl">
-                    <h3 className="font-bold mb-3 flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Saved Drafts ({drafts.length})
-                    </h3>
-                    {drafts.length === 0 ? (
-                      <p className="text-sm text-gray-500">No saved drafts</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {drafts.map((draft) => (
-                          <div
-                            key={draft.id}
-                            className="bg-white border border-[#E5E7EB] rounded-lg p-3 hover:border-black transition-all duration-200 cursor-pointer group"
-                            onClick={() => loadDraft(draft)}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  {draft.to && (
-                                    <span className="text-sm font-bold truncate">
-                                      To: {draft.to}
-                                    </span>
-                                  )}
-                                  {currentDraftId === draft.id && (
-                                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                                      Current
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-sm text-gray-700 truncate">
-                                  {draft.subject || '(No Subject)'}
-                                </div>
-                                <div className="text-xs text-gray-secondary mt-1">
-                                  Last updated: {new Date(draft.updatedAt).toLocaleString()}
-                                </div>
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (confirm('Delete this draft?')) {
-                                    deleteDraft(draft.id)
-                                  }
-                                }}
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all duration-200"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Always show inbox content/filters, logic handled by state */}
-              {true && (
-                <>
-                  <div className="border-b border-gray-border p-4 bg-gray-50">
-                    <div className="flex gap-3 mb-3">
-                      <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Search emails (from, to, subject, content)..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2.5 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200"
-                        />
-                      </div>
+              {view === 'inbox' && (
+                <div className="flex items-center gap-2 mr-4">
+                  {bulkMode && selectedEmails.size > 0 ? (
+                    <>
+                      <span className="text-sm font-bold text-gray-700">{selectedEmails.size} selected</span>
                       <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 font-bold rounded-lg transition-all duration-200 ${showFilters || hasActiveFilters
+                        onClick={bulkMarkAsRead}
+                        className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E6F7F0] text-[#0F5132] text-sm font-bold rounded-lg hover:brightness-95"
+                      >
+                        <MailOpen className="w-4 h-4" />
+                        Mark Read
+                      </button>
+                      <button
+                        onClick={bulkMarkAsUnread}
+                        className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#E8F0FF] text-[#1E3A8A] text-sm font-bold rounded-lg hover:brightness-95"
+                      >
+                        <MailX className="w-4 h-4" />
+                        Mark Unread
+                      </button>
+                      <button
+                        onClick={bulkDelete}
+                        className="btn-smooth px-4 py-2 flex items-center gap-2 bg-[#FFE5E5] text-[#7F1D1D] text-sm font-bold rounded-lg hover:brightness-95"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={toggleBulkMode}
+                        className={`btn-smooth px-4 py-2 flex items-center gap-2 border-2 text-sm font-bold rounded-lg ${bulkMode
                           ? 'border-black bg-[#F2F2F2]'
-                          : 'border-[#E5E7EB] text-[#1A1A1A] hover:border-black'
+                          : 'border-[#E5E7EB] hover:border-black'
                           }`}
                       >
-                        <Filter className="w-4 h-4" />
-                        Filters {hasActiveFilters && `(${[filterFrom, filterSubject, filterFolder !== 'all', filterHasAttachments, filterUnreadOnly].filter(Boolean).length})`}
+                        {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                        {bulkMode ? 'Exit Bulk' : 'Select'}
                       </button>
-                      {hasActiveFilters && (
-                        <button
-                          onClick={clearFilters}
-                          className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#FFECEC] border-2 border-[#F5B5B5] text-[#D11A2A] font-bold rounded-lg hover:bg-red-100"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
-                    {showFilters && (
-                      <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-gray-border rounded-lg animate-slideDown">
-                        <div>
-                          <label className="block text-xs font-bold mb-1.5 text-gray-secondary">From</label>
-                          <input
-                            type="text"
-                            placeholder="Filter by sender..."
-                            value={filterFrom}
-                            onChange={(e) => setFilterFrom(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold mb-1.5 text-gray-secondary">Subject</label>
-                          <input
-                            type="text"
-                            placeholder="Filter by subject..."
-                            value={filterSubject}
-                            onChange={(e) => setFilterSubject(e.target.value)}
-                            className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold mb-1.5 text-gray-secondary">Folder</label>
-                          <select
-                            value={filterFolder}
-                            onChange={(e) => setFilterFolder(e.target.value as any)}
-                            className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                          >
-                            <option value="all">All Folders</option>
-                            <option value="INBOX">Inbox Only</option>
-                            <option value="Sent">Sent Only</option>
-                          </select>
-                        </div>
-                        <div className="flex flex-col gap-2 justify-end">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={filterHasAttachments}
-                              onChange={(e) => setFilterHasAttachments(e.target.checked)}
-                              className="w-4 h-4 rounded"
-                            />
-                            <span className="text-sm font-bold">Has Attachments</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={filterUnreadOnly}
-                              onChange={(e) => setFilterUnreadOnly(e.target.checked)}
-                              className="w-4 h-4 rounded"
-                            />
-                            <span className="text-sm font-bold">Unread Only</span>
-                          </label>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between mt-3">
-                      <p className="text-sm text-gray-secondary">
-                        Showing <strong>{filteredEmails.length}</strong> of <strong>{emails.length}</strong> emails
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {bulkMode && filteredEmails.length > 0 && (
-                          <>
-                            <button
-                              onClick={selectAll}
-                              className="text-xs px-3 py-1 border border-gray-border rounded-md hover:bg-gray-50 font-bold"
-                            >
-                              Select All
-                            </button>
-                            <button
-                              onClick={selectNone}
-                              className="text-xs px-3 py-1 border border-gray-border rounded-md hover:bg-gray-50 font-bold"
-                            >
-                              Select None
-                            </button>
-                          </>
-                        )}
-                        {hasActiveFilters && (
-                          <p className="text-xs text-blue-600 font-bold">
-                            {emails.length - filteredEmails.length} hidden
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 divide-x divide-gray-border h-[600px]">
-                    <div className="overflow-y-auto">
-                      {filteredEmails.length === 0 ? (
-                        <div className="flex items-center justify-center h-full text-gray-secondary">
-                          <div className="text-center">
-                            {hasActiveFilters ? (
-                              <>
-                                <Search className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                <p className="font-bold mb-2">No matching emails</p>
-                                <p className="text-sm">Try adjusting your search or filters</p>
-                              </>
-                            ) : (
-                              <>
-                                <Inbox className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                <p>No emails</p>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        filteredEmails.map((email, idx) => {
-                          const unread = isUnread(email.uid)
-                          const sent = isSent(email)
-
-                          return (
-                            <div
-                              key={`${email.uid}-${email.folder}`}
-                              onClick={() => !bulkMode && handleEmailClick(email)}
-                              className={`p-4 border-b border-gray-border cursor-pointer relative transition-all duration-200 hover:translate-x-1 ${selectedEmail?.uid === email.uid && selectedEmail?.folder === email.folder ? 'bg-gray-light' : 'hover:bg-gray-light'
-                                } ${unread ? 'bg-gray-50' : ''}`}
-                            >
-                              {unread && <div className="absolute left-0 top-0 bottom-0 w-1 bg-text-black"></div>}
-                              <div className="flex items-start justify-between gap-2">
-                                {bulkMode && (
-                                  <div className="flex-shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedEmails.has(`${email.uid}-${email.folder}`)}
-                                      onChange={() => toggleEmailSelection(`${email.uid}-${email.folder}`)}
-                                      className="w-4 h-4 rounded border-gray-300"
-                                    />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className={`text-sm truncate flex items-center gap-2 ${unread ? 'font-black' : 'font-bold'}`}>
-                                    {sent && (
-                                      <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-700 rounded-md transition-all duration-200 hover:bg-gray-300">
-                                        SENT
-                                      </span>
-                                    )}
-                                    {email.hasAttachments && (
-                                      <Paperclip className="w-3.5 h-3.5 text-gray-500" />
-                                    )}
-                                    <span className="truncate">{sent ? email.to : email.from}</span>
-                                  </div>
-                                  <div className={`text-sm truncate ${unread ? 'font-bold' : ''}`}>
-                                    {email.subject || '(No Subject)'}
-                                  </div>
-                                  <div className="text-xs text-gray-secondary mt-1">
-                                    {new Date(email.date).toLocaleString()}
-                                  </div>
-                                </div>
-                                {unread && (
-                                  <div className="w-2.5 h-2.5 rounded-full bg-text-black flex-shrink-0 mt-1 success-check"></div>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })
-                      )}
-                    </div>
-
-                    <div className="flex flex-col h-full overflow-y-auto">
-                      {selectedEmail ? (
-                        <div className="flex flex-col h-full animate-in fade-in duration-300">
-                          <div className="border-b border-gray-border p-4 flex gap-2 flex-shrink-0">
-                            <button
-                              onClick={handleReply}
-                              className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#0B0B0B] text-white text-sm font-bold rounded-lg hover:bg-[#1A1A1A]"
-                            >
-                              <Reply className="w-4 h-4" />
-                              Reply
-                            </button>
-                            <button
-                              onClick={handleDelete}
-                              className="btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 border-[#E5E7EB] text-[#1A1A1A] text-sm font-bold rounded-lg hover:bg-[#FFECEC] hover:text-[#D11A2A] hover:border-[#F5B5B5]"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete
-                            </button>
-                          </div>
-                          <div className="p-6 flex-1 overflow-y-auto">
-                            <h2 className="text-xl font-black mb-4">{selectedEmail.subject}</h2>
-                            <div className="text-sm mb-4 space-y-1 pb-4 border-b border-gray-border">
-                              <div><strong>From:</strong> {selectedEmail.from}</div>
-                              <div><strong>To:</strong> {selectedEmail.to}</div>
-                              <div><strong>Date:</strong> {new Date(selectedEmail.date).toLocaleString()}</div>
-                              {selectedEmail.folder && <div><strong>Folder:</strong> {selectedEmail.folder}</div>}
-                              {selectedEmail.hasAttachments && (
-                                <div className="flex items-center gap-2 text-gray-600">
-                                  <Paperclip className="w-4 h-4" />
-                                  <strong>Attachments:</strong> {selectedEmail.attachmentCount} file{selectedEmail.attachmentCount !== 1 ? 's' : ''}
-                                </div>
-                              )}
-                            </div>
-                            {selectedEmail.htmlContent ? (
-                              <div
-                                className="email-html-content break-words"
-                                dangerouslySetInnerHTML={{ __html: selectedEmail.htmlContent }}
-                              />
-                            ) : (
-                              <div className="whitespace-pre-wrap">{selectedEmail.text}</div>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-gray-secondary">
-                          <div className="text-center">
-                            <Mail className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                            <p>Select an email to view</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                </>
+                      <button
+                        onClick={() => syncEmails(true)}
+                        disabled={syncing}
+                        className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#0B0B0B] text-white text-sm font-bold rounded-lg hover:bg-[#1A1A1A] disabled:bg-gray-400"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${syncing ? 'smooth-spin' : ''}`} />
+                        Refresh
+                      </button>
+                    </>
+                  )}
+                </div>
               )}
 
-              {/* Compose Modal */}
-              {showComposeModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
-                  <div
-                    className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity"
-                    onClick={() => {
-                      if (to || subject || (useRichText ? htmlBody : body) || attachments.length > 0) {
-                        if (confirm('Discard draft?')) {
-                          closeCompose()
-                        }
-                      } else {
-                        closeCompose()
-                      }
-                    }}
-                  />
-                  <div className="relative bg-white/95 w-full max-w-5xl rounded-2xl shadow-2xl border border-white/20 ring-1 ring-black/5 flex flex-col max-h-[90vh] animate-in zoom-in-95 fade-in duration-200 backdrop-blur-md">
-                    {/* Modal Header */}
-                    <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100/50">
-                      <div className="flex items-center gap-4">
-                        <h2 className="text-xl font-black tracking-tight text-black">New Message</h2>
-                        {autoSaveStatus !== 'idle' && (
-                          <span className="text-xs flex items-center gap-1.5 text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
-                            {autoSaveStatus === 'saving' ? (
-                              <>
-                                <Clock className="w-3 h-3 animate-pulse" />
-                                Saving...
-                              </>
-                            ) : (
-                              <>
-                                <Check className="w-3 h-3 text-green-600" />
-                                Saved
-                              </>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setShowTemplates(!showTemplates)}
-                          className="text-xs font-bold px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-black text-gray-600 transition-colors"
-                        >
-                          Templates
-                        </button>
-                        <button
-                          onClick={() => setShowSignatureModal(true)}
-                          className={`text-xs font-bold px-3 py-1.5 border rounded-lg transition-colors ${useSignature ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
-                        >
-                          Signature
-                        </button>
-                        <button
-                          onClick={() => saveDraft(false)}
-                          className="text-xs font-bold px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-black text-gray-600 transition-colors"
-                        >
-                          Save Draft
-                        </button>
-                        <div className="w-px h-6 bg-gray-200 mx-2" />
-                        <button
-                          onClick={() => {
-                            if (to || subject || (useRichText ? htmlBody : body) || attachments.length > 0) {
-                              if (confirm('Discard draft?')) {
-                                closeCompose()
-                              }
-                            } else {
-                              closeCompose()
-                            }
-                          }}
-                          className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-full transition-all duration-200"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Modal Body */}
-                    <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-[80px_1fr] gap-4 items-center">
-                          <label className="text-xs font-bold tracking-wider uppercase text-gray-400 text-right">From</label>
-                          <input type="text" value={currentAccount?.email || ''} disabled className="w-full px-0 py-2 border-b border-gray-100 bg-transparent font-medium text-gray-500" />
-                        </div>
-                        <div className="grid grid-cols-[80px_1fr] gap-4 items-center">
-                          <label className="text-xs font-bold tracking-wider uppercase text-gray-400 text-right">To</label>
-                          <input
-                            type="email"
-                            value={to}
-                            onChange={(e) => setTo(e.target.value)}
-                            className="w-full px-0 py-2 border-b border-gray-100 focus:border-black bg-transparent font-medium transition-colors placeholder-gray-300 focus:outline-none"
-                            placeholder="recipient@example.com"
-                          />
-                        </div>
-                        <div className="grid grid-cols-[80px_1fr] gap-4 items-center">
-                          <label className="text-xs font-bold tracking-wider uppercase text-gray-400 text-right">Subject</label>
-                          <input
-                            type="text"
-                            value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
-                            className="w-full px-0 py-2 border-b border-gray-100 focus:border-black bg-transparent font-bold text-lg transition-colors placeholder-gray-300 focus:outline-none"
-                            placeholder="Subject line..."
-                          />
-                        </div>
-
-                        <div className="pt-4 border-t border-gray-50">
-                          <div className="flex items-center justify-between mb-4">
-                            <label className="text-xs font-bold tracking-wider uppercase text-gray-400">Message Body</label>
-                            <button
-                              onClick={() => setUseRichText(!useRichText)}
-                              className="text-xs font-bold px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded transition-colors"
-                            >
-                              {useRichText ? 'Plain Text Mode' : 'Rich Text Mode'}
-                            </button>
-                          </div>
-                          <div className="bg-white rounded-xl border border-gray-100 shadow-inner overflow-hidden min-h-[300px]">
-                            {useRichText ? (
-                              <RichTextEditor
-                                value={htmlBody}
-                                onChange={setHtmlBody}
-                                placeholder="Write your message..."
-                                height="300px"
-                              />
-                            ) : (
-                              <textarea
-                                value={body}
-                                onChange={(e) => setBody(e.target.value)}
-                                className="w-full px-6 py-6 border-0 focus:ring-0 h-[300px] resize-none font-mono text-sm bg-gray-50/30"
-                                placeholder="Write your message..."
-                              />
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <AttachmentUpload
-                            attachments={attachments}
-                            onChange={setAttachments}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Modal Footer */}
-                    <div className="p-6 border-t border-gray-100 bg-gray-50/80 backdrop-blur rounded-b-2xl flex justify-between items-center">
-                      <button
-                        onClick={() => {
-                          if (confirm('Discard draft?')) {
-                            closeCompose()
-                          }
-                        }}
-                        className="px-6 py-3 font-bold text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                      >
-                        Discard
-                      </button>
-                      <button
-                        onClick={sendEmail}
-                        disabled={loading}
-                        className="px-8 py-3 bg-[#0B0B0B] text-white font-bold tracking-wider uppercase hover:bg-[#1A1A1A] hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 rounded-xl shadow-lg shadow-black/20 transition-all duration-300"
-                      >
-                        <Send className="w-4 h-4" />
-                        {loading ? 'Sending...' : 'Send Email'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
 
-          {showSuccess && (
-            <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-              <div className="bg-green-500 text-white p-8 rounded-full shadow-2xl animate-in zoom-in duration-500">
-                <Check className="w-16 h-16" />
-              </div>
-            </div>
-          )}
-
-          {showAddModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in duration-200">
-              <div className="modal-animate bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-black">Add New Email Account</h2>
-                  <button onClick={() => setShowAddModal(false)} className="text-gray-500 hover:text-black transition-all duration-200 hover:rotate-90">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block font-bold text-sm mb-2">Account Name *</label>
-                    <input type="text" value={newAccount.name} onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="e.g., Sales" />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-sm mb-2">Email Address *</label>
-                    <input type="email" value={newAccount.email} onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="email@domain.com" />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-sm mb-2">Password *</label>
-                    <input type="password" value={newAccount.password} onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-sm mb-2">IMAP Host</label>
-                      <input type="text" value={newAccount.imapHost} onChange={(e) => setNewAccount({ ...newAccount, imapHost: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-sm mb-2">IMAP Port</label>
-                      <input type="number" value={newAccount.imapPort} onChange={(e) => setNewAccount({ ...newAccount, imapPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-sm mb-2">SMTP Host</label>
-                      <input type="text" value={newAccount.smtpHost} onChange={(e) => setNewAccount({ ...newAccount, smtpHost: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-sm mb-2">SMTP Port</label>
-                      <input type="number" value={newAccount.smtpPort} onChange={(e) => setNewAccount({ ...newAccount, smtpPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button onClick={createAccount} disabled={loading} className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400">
-                      {loading ? 'Creating...' : 'Create Account'}
-                    </button>
-                    <button onClick={() => setShowAddModal(false)} className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]">
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Edit Account Modal */}
-          {showEditModal && editingAccount && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ animation: 'fadeIn 0.2s' }}>
-              <div className="modal-animate bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-black">Edit Email Account</h2>
-                  <button onClick={() => { setShowEditModal(false); setEditingAccount(null); }} className="text-gray-500 hover:text-black transition-all duration-200 hover:rotate-90">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block font-bold text-sm mb-2">Account Name *</label>
-                    <input type="text" value={editingAccount.name} onChange={(e) => setEditingAccount({ ...editingAccount, name: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="e.g., Sales" />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-sm mb-2">Email Address *</label>
-                    <input type="email" value={editingAccount.email} onChange={(e) => setEditingAccount({ ...editingAccount, email: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="email@domain.com" />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-sm mb-2">Password (leave blank to keep current)</label>
-                    <input type="password" value={editingAccount.password || ''} onChange={(e) => setEditingAccount({ ...editingAccount, password: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="Enter new password or leave blank" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-sm mb-2">IMAP Host</label>
-                      <input type="text" value={editingAccount.imapHost} onChange={(e) => setEditingAccount({ ...editingAccount, imapHost: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-sm mb-2">IMAP Port</label>
-                      <input type="number" value={editingAccount.imapPort} onChange={(e) => setEditingAccount({ ...editingAccount, imapPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-sm mb-2">SMTP Host</label>
-                      <input type="text" value={editingAccount.smtpHost} onChange={(e) => setEditingAccount({ ...editingAccount, smtpHost: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-sm mb-2">SMTP Port</label>
-                      <input type="number" value={editingAccount.smtpPort} onChange={(e) => setEditingAccount({ ...editingAccount, smtpPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button onClick={updateAccount} disabled={loading} className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400">
-                      {loading ? 'Updating...' : 'Update Account'}
-                    </button>
-                    <button onClick={() => { setShowEditModal(false); setEditingAccount(null); }} className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]">
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {showSignatureModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ animation: 'fadeIn 0.2s' }}>
-              <div className="modal-animate bg-white rounded-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-black">Email Signature</h2>
-                  <button onClick={() => setShowSignatureModal(false)} className="text-gray-500 hover:text-black transition-all duration-200 hover:rotate-90">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <input
-                      type="checkbox"
-                      checked={useSignature}
-                      onChange={(e) => setUseSignature(e.target.checked)}
-                      className="w-5 h-5 rounded"
-                    />
-                    <label className="font-bold text-sm">
-                      Auto-append signature to outgoing emails
-                    </label>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block font-bold text-sm">Signature</label>
-                      <button
-                        onClick={() => setSignatureRichText(!signatureRichText)}
-                        className="text-xs px-3 py-1 border border-gray-border rounded-md hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        {signatureRichText ? 'Switch to Plain Text' : 'Switch to Rich Text'}
-                      </button>
-                    </div>
-
-                    {signatureRichText ? (
-                      <RichTextEditor
-                        value={signatureHtml}
-                        onChange={setSignatureHtml}
-                        placeholder="Your signature here (e.g., name, title, contact info)..."
-                        height="250px"
-                      />
-                    ) : (
-                      <textarea
-                        value={signatureText}
-                        onChange={(e) => setSignatureText(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black h-48 transition-all duration-200"
-                        placeholder="Your signature here (e.g., name, title, contact info)..."
-                      />
-                    )}
-                  </div>
-
-                  <div className="p-4 bg-gray-50 border border-gray-border rounded-lg">
-                    <p className="text-sm font-bold mb-2">Preview:</p>
-                    <div className="text-sm text-gray-700 border-t border-gray-300 pt-2 mt-2">
-                      --
-                      {signatureRichText && signatureHtml ? (
-                        <div dangerouslySetInnerHTML={{ __html: signatureHtml }} />
-                      ) : (
-                        <div className="whitespace-pre-wrap">{signatureText || '(Empty signature)'}</div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      onClick={saveSignature}
-                      disabled={loading}
-                      className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400"
-                    >
-                      {loading ? 'Saving...' : 'Save Signature'}
-                    </button>
-                    <button
-                      onClick={() => setShowSignatureModal(false)}
-                      className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-
-
-          {/* Template Selector Dropdown */}
-          {showTemplates && view === 'compose' && (
-            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-start justify-end z-40" onClick={() => setShowTemplates(false)}>
-              <div className="mt-20 mr-8 bg-white rounded-xl shadow-2xl border border-gray-border p-4 w-96 max-h-[70vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-black text-lg">Load Template</h3>
-                  <button onClick={() => setShowTemplateManager(true)} className="text-sm text-blue-600 hover:underline">
-                    Manage
-                  </button>
-                </div>
-                {templates.length === 0 ? (
-                  <p className="text-sm text-gray-secondary">No templates yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {templates.map(template => (
-                      <button
-                        key={template.id}
-                        onClick={() => loadTemplate(template)}
-                        className="w-full text-left p-3 border border-gray-border rounded-lg hover:border-text-black transition-all duration-200"
-                      >
-                        <div className="font-bold">{template.name}</div>
-                        {template.subject && <div className="text-sm text-gray-600 truncate">{template.subject}</div>}
-                        <div className="text-xs text-gray-secondary mt-1 flex items-center gap-2">
-                          {template.category && <span className="px-2 py-0.5 bg-gray-100 rounded">{template.category}</span>}
-                          <span>Used {template.usageCount || 0} times</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Template Manager Modal */}
-          {showTemplateManager && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ animation: 'fadeIn 0.2s' }}>
-              <div className="modal-animate bg-white rounded-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-black">Manage Templates</h2>
-                  <button onClick={() => setShowTemplateManager(false)} className="text-gray-500 hover:text-black transition-all duration-200 hover:rotate-90">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                {/* Save Current as Template */}
-                {view === 'compose' && (
-                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h3 className="font-bold mb-3">Save Current Email as Template</h3>
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div>
-                        <label className="block text-xs font-bold mb-1.5 text-gray-secondary">Template Name</label>
-                        <input
-                          type="text"
-                          value={newTemplateName}
-                          onChange={(e) => setNewTemplateName(e.target.value)}
-                          placeholder="e.g., Welcome Email"
-                          className="w-full px-3 py-2 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold mb-1.5 text-gray-secondary">Category (Optional)</label>
-                        <input
-                          type="text"
-                          value={newTemplateCategory}
-                          onChange={(e) => setNewTemplateCategory(e.target.value)}
-                          placeholder="e.g., Support"
-                          className="w-full px-3 py-2 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      onClick={saveAsTemplate}
-                      disabled={loading}
-                      className="w-full px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-                    >
-                      {loading ? 'Saving...' : 'Save as Template'}
-                    </button>
-                  </div>
-                )}
-
-                {/* Templates List */}
-                <div>
-                  <h3 className="font-bold mb-3">Your Templates ({templates.length})</h3>
-                  {templates.length === 0 ? (
-                    <p className="text-sm text-gray-secondary">No templates created yet.</p>
+            {showDrafts && (
+              <div className="border-b border-[#E5E7EB] bg-gray-50 p-4">
+                <div className="max-w-4xl">
+                  <h3 className="font-bold mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Saved Drafts ({drafts.length})
+                  </h3>
+                  {drafts.length === 0 ? (
+                    <p className="text-sm text-gray-500">No saved drafts</p>
                   ) : (
                     <div className="space-y-2">
-                      {templates.map(template => (
+                      {drafts.map((draft) => (
                         <div
-                          key={template.id}
-                          className="flex items-start justify-between p-4 border border-gray-border rounded-lg hover:border-text-black transition-all duration-200"
+                          key={draft.id}
+                          className="bg-white border border-[#E5E7EB] rounded-lg p-3 hover:border-black transition-all duration-200 cursor-pointer group"
+                          onClick={() => loadDraft(draft)}
                         >
-                          <div className="flex-1">
-                            <div className="font-bold">{template.name}</div>
-                            {template.subject && <div className="text-sm text-gray-600">{template.subject}</div>}
-                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-secondary">
-                              {template.category && <span className="px-2 py-1 bg-gray-100 rounded">{template.category}</span>}
-                              <span>Used {template.usageCount || 0} times</span>
-                              {template.lastUsed && <span>Last: {new Date(template.lastUsed).toLocaleDateString()}</span>}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                {draft.to && (
+                                  <span className="text-sm font-bold truncate">
+                                    To: {draft.to}
+                                  </span>
+                                )}
+                                {currentDraftId === draft.id && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                    Current
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-700 truncate">
+                                {draft.subject || '(No Subject)'}
+                              </div>
+                              <div className="text-xs text-gray-secondary mt-1">
+                                Last updated: {new Date(draft.updatedAt).toLocaleString()}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex gap-2">
-                            {view === 'compose' && (
-                              <button
-                                onClick={() => {
-                                  loadTemplate(template)
-                                  setShowTemplateManager(false)
-                                }}
-                                className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                            )}
                             <button
-                              onClick={() => deleteTemplate(template.id)}
-                              className="p-2 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all duration-200"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (confirm('Delete this draft?')) {
+                                  deleteDraft(draft.id)
+                                }
+                              }}
+                              className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all duration-200"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1922,12 +1144,765 @@ export default function MailSystemPage() {
                   )}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
+            {/* Always show inbox content/filters, logic handled by state */}
+            {true && (
+              <>
+                <div className="border-b border-gray-border p-4 bg-gray-50">
+                  <div className="flex gap-3 mb-3">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search emails (from, to, subject, content)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200"
+                      />
+                    </div>
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 font-bold rounded-lg transition-all duration-200 ${showFilters || hasActiveFilters
+                        ? 'border-black bg-[#F2F2F2]'
+                        : 'border-[#E5E7EB] text-[#1A1A1A] hover:border-black'
+                        }`}
+                    >
+                      <Filter className="w-4 h-4" />
+                      Filters {hasActiveFilters && `(${[filterFrom, filterSubject, filterFolder !== 'all', filterHasAttachments, filterUnreadOnly].filter(Boolean).length})`}
+                    </button>
+                    {hasActiveFilters && (
+                      <button
+                        onClick={clearFilters}
+                        className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#FFECEC] border-2 border-[#F5B5B5] text-[#D11A2A] font-bold rounded-lg hover:bg-red-100"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  {showFilters && (
+                    <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-gray-border rounded-lg animate-slideDown">
+                      <div>
+                        <label className="block text-xs font-bold mb-1.5 text-gray-secondary">From</label>
+                        <input
+                          type="text"
+                          placeholder="Filter by sender..."
+                          value={filterFrom}
+                          onChange={(e) => setFilterFrom(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold mb-1.5 text-gray-secondary">Subject</label>
+                        <input
+                          type="text"
+                          placeholder="Filter by subject..."
+                          value={filterSubject}
+                          onChange={(e) => setFilterSubject(e.target.value)}
+                          className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold mb-1.5 text-gray-secondary">Folder</label>
+                        <select
+                          value={filterFolder}
+                          onChange={(e) => setFilterFolder(e.target.value as any)}
+                          className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                        >
+                          <option value="all">All Folders</option>
+                          <option value="INBOX">Inbox Only</option>
+                          <option value="Sent">Sent Only</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-2 justify-end">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filterHasAttachments}
+                            onChange={(e) => setFilterHasAttachments(e.target.checked)}
+                            className="w-4 h-4 rounded"
+                          />
+                          <span className="text-sm font-bold">Has Attachments</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filterUnreadOnly}
+                            onChange={(e) => setFilterUnreadOnly(e.target.checked)}
+                            className="w-4 h-4 rounded"
+                          />
+                          <span className="text-sm font-bold">Unread Only</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-sm text-gray-secondary">
+                      Showing <strong>{filteredEmails.length}</strong> of <strong>{emails.length}</strong> emails
+                    </p>
+                    <div className="flex items-center gap-2">
+                      {bulkMode && filteredEmails.length > 0 && (
+                        <>
+                          <button
+                            onClick={selectAll}
+                            className="text-xs px-3 py-1 border border-gray-border rounded-md hover:bg-gray-50 font-bold"
+                          >
+                            Select All
+                          </button>
+                          <button
+                            onClick={selectNone}
+                            className="text-xs px-3 py-1 border border-gray-border rounded-md hover:bg-gray-50 font-bold"
+                          >
+                            Select None
+                          </button>
+                        </>
+                      )}
+                      {hasActiveFilters && (
+                        <p className="text-xs text-blue-600 font-bold">
+                          {emails.length - filteredEmails.length} hidden
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 divide-x divide-gray-border h-[600px]">
+                  <div className="overflow-y-auto">
+                    {filteredEmails.length === 0 ? (
+                      <div className="flex items-center justify-center h-full text-gray-secondary">
+                        <div className="text-center">
+                          {hasActiveFilters ? (
+                            <>
+                              <Search className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                              <p className="font-bold mb-2">No matching emails</p>
+                              <p className="text-sm">Try adjusting your search or filters</p>
+                            </>
+                          ) : (
+                            <>
+                              <Inbox className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                              <p>No emails</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      filteredEmails.map((email, idx) => {
+                        const unread = isUnread(email.uid)
+                        const sent = isSent(email)
+
+                        return (
+                          <div
+                            key={`${email.uid}-${email.folder}`}
+                            onClick={() => !bulkMode && handleEmailClick(email)}
+                            className={`p-4 border-b border-gray-border cursor-pointer relative transition-all duration-200 hover:translate-x-1 ${selectedEmail?.uid === email.uid && selectedEmail?.folder === email.folder ? 'bg-gray-light' : 'hover:bg-gray-light'
+                              } ${unread ? 'bg-gray-50' : ''}`}
+                          >
+                            {unread && <div className="absolute left-0 top-0 bottom-0 w-1 bg-text-black"></div>}
+                            <div className="flex items-start justify-between gap-2">
+                              {bulkMode && (
+                                <div className="flex-shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedEmails.has(`${email.uid}-${email.folder}`)}
+                                    onChange={() => toggleEmailSelection(`${email.uid}-${email.folder}`)}
+                                    className="w-4 h-4 rounded border-gray-300"
+                                  />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className={`text-sm truncate flex items-center gap-2 ${unread ? 'font-black' : 'font-bold'}`}>
+                                  {sent && (
+                                    <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-700 rounded-md transition-all duration-200 hover:bg-gray-300">
+                                      SENT
+                                    </span>
+                                  )}
+                                  {email.hasAttachments && (
+                                    <Paperclip className="w-3.5 h-3.5 text-gray-500" />
+                                  )}
+                                  <span className="truncate">{sent ? email.to : email.from}</span>
+                                </div>
+                                <div className={`text-sm truncate ${unread ? 'font-bold' : ''}`}>
+                                  {email.subject || '(No Subject)'}
+                                </div>
+                                <div className="text-xs text-gray-secondary mt-1">
+                                  {new Date(email.date).toLocaleString()}
+                                </div>
+                              </div>
+                              {unread && (
+                                <div className="w-2.5 h-2.5 rounded-full bg-text-black flex-shrink-0 mt-1 success-check"></div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+
+                  <div className="flex flex-col h-full overflow-y-auto">
+                    {selectedEmail ? (
+                      <div className="flex flex-col h-full animate-in fade-in duration-300">
+                        <div className="border-b border-gray-border p-4 flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={handleReply}
+                            className="btn-smooth px-5 py-2.5 flex items-center gap-2 bg-[#0B0B0B] text-white text-sm font-bold rounded-lg hover:bg-[#1A1A1A]"
+                          >
+                            <Reply className="w-4 h-4" />
+                            Reply
+                          </button>
+                          <button
+                            onClick={handleDelete}
+                            className="btn-smooth px-5 py-2.5 flex items-center gap-2 border-2 border-[#E5E7EB] text-[#1A1A1A] text-sm font-bold rounded-lg hover:bg-[#FFECEC] hover:text-[#D11A2A] hover:border-[#F5B5B5]"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                        <div className="p-6 flex-1 overflow-y-auto">
+                          <h2 className="text-xl font-black mb-4">{selectedEmail.subject}</h2>
+                          <div className="text-sm mb-4 space-y-1 pb-4 border-b border-gray-border">
+                            <div><strong>From:</strong> {selectedEmail.from}</div>
+                            <div><strong>To:</strong> {selectedEmail.to}</div>
+                            <div><strong>Date:</strong> {new Date(selectedEmail.date).toLocaleString()}</div>
+                            {selectedEmail.folder && <div><strong>Folder:</strong> {selectedEmail.folder}</div>}
+                            {selectedEmail.hasAttachments && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Paperclip className="w-4 h-4" />
+                                <strong>Attachments:</strong> {selectedEmail.attachmentCount} file{selectedEmail.attachmentCount !== 1 ? 's' : ''}
+                              </div>
+                            )}
+                          </div>
+                          {selectedEmail.htmlContent ? (
+                            <div
+                              className="email-html-content break-words"
+                              dangerouslySetInnerHTML={{ __html: selectedEmail.htmlContent }}
+                            />
+                          ) : (
+                            <div className="whitespace-pre-wrap">{selectedEmail.text}</div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-secondary">
+                        <div className="text-center">
+                          <Mail className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                          <p>Select an email to view</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </>
+            )}
+
+            {/* Compose Modal */}
+            {showComposeModal && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+                <div
+                  className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity"
+                  onClick={() => {
+                    if (to || subject || (useRichText ? htmlBody : body) || attachments.length > 0) {
+                      if (confirm('Discard draft?')) {
+                        closeCompose()
+                      }
+                    } else {
+                      closeCompose()
+                    }
+                  }}
+                />
+                <div className="relative bg-white/95 w-full max-w-5xl rounded-2xl shadow-2xl border border-white/20 ring-1 ring-black/5 flex flex-col max-h-[90vh] animate-in zoom-in-95 fade-in duration-200 backdrop-blur-md">
+                  {/* Modal Header */}
+                  <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100/50">
+                    <div className="flex items-center gap-4">
+                      <h2 className="text-xl font-black tracking-tight text-black">New Message</h2>
+                      {autoSaveStatus !== 'idle' && (
+                        <span className="text-xs flex items-center gap-1.5 text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
+                          {autoSaveStatus === 'saving' ? (
+                            <>
+                              <Clock className="w-3 h-3 animate-pulse" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3 h-3 text-green-600" />
+                              Saved
+                            </>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setShowTemplates(!showTemplates)}
+                        className="text-xs font-bold px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-black text-gray-600 transition-colors"
+                      >
+                        Templates
+                      </button>
+                      <button
+                        onClick={() => setShowSignatureModal(true)}
+                        className={`text-xs font-bold px-3 py-1.5 border rounded-lg transition-colors ${useSignature ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+                      >
+                        Signature
+                      </button>
+                      <button
+                        onClick={() => saveDraft(false)}
+                        className="text-xs font-bold px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-black text-gray-600 transition-colors"
+                      >
+                        Save Draft
+                      </button>
+                      <div className="w-px h-6 bg-gray-200 mx-2" />
+                      <button
+                        onClick={() => {
+                          if (to || subject || (useRichText ? htmlBody : body) || attachments.length > 0) {
+                            if (confirm('Discard draft?')) {
+                              closeCompose()
+                            }
+                          } else {
+                            closeCompose()
+                          }
+                        }}
+                        className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-full transition-all duration-200"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-[80px_1fr] gap-4 items-center">
+                        <label className="text-xs font-bold tracking-wider uppercase text-gray-400 text-right">From</label>
+                        <input type="text" value={currentAccount?.email || ''} disabled className="w-full px-0 py-2 border-b border-gray-100 bg-transparent font-medium text-gray-500" />
+                      </div>
+                      <div className="grid grid-cols-[80px_1fr] gap-4 items-center">
+                        <label className="text-xs font-bold tracking-wider uppercase text-gray-400 text-right">To</label>
+                        <input
+                          type="email"
+                          value={to}
+                          onChange={(e) => setTo(e.target.value)}
+                          className="w-full px-0 py-2 border-b border-gray-100 focus:border-black bg-transparent font-medium transition-colors placeholder-gray-300 focus:outline-none"
+                          placeholder="recipient@example.com"
+                        />
+                      </div>
+                      <div className="grid grid-cols-[80px_1fr] gap-4 items-center">
+                        <label className="text-xs font-bold tracking-wider uppercase text-gray-400 text-right">Subject</label>
+                        <input
+                          type="text"
+                          value={subject}
+                          onChange={(e) => setSubject(e.target.value)}
+                          className="w-full px-0 py-2 border-b border-gray-100 focus:border-black bg-transparent font-bold text-lg transition-colors placeholder-gray-300 focus:outline-none"
+                          placeholder="Subject line..."
+                        />
+                      </div>
+
+                      <div className="pt-4 border-t border-gray-50">
+                        <div className="flex items-center justify-between mb-4">
+                          <label className="text-xs font-bold tracking-wider uppercase text-gray-400">Message Body</label>
+                          <button
+                            onClick={() => setUseRichText(!useRichText)}
+                            className="text-xs font-bold px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded transition-colors"
+                          >
+                            {useRichText ? 'Plain Text Mode' : 'Rich Text Mode'}
+                          </button>
+                        </div>
+                        <div className="bg-white rounded-xl border border-gray-100 shadow-inner overflow-hidden min-h-[300px]">
+                          {useRichText ? (
+                            <RichTextEditor
+                              value={htmlBody}
+                              onChange={setHtmlBody}
+                              placeholder="Write your message..."
+                              height="300px"
+                            />
+                          ) : (
+                            <textarea
+                              value={body}
+                              onChange={(e) => setBody(e.target.value)}
+                              className="w-full px-6 py-6 border-0 focus:ring-0 h-[300px] resize-none font-mono text-sm bg-gray-50/30"
+                              placeholder="Write your message..."
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <AttachmentUpload
+                          attachments={attachments}
+                          onChange={setAttachments}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="p-6 border-t border-gray-100 bg-gray-50/80 backdrop-blur rounded-b-2xl flex justify-between items-center">
+                    <button
+                      onClick={() => {
+                        if (confirm('Discard draft?')) {
+                          closeCompose()
+                        }
+                      }}
+                      className="px-6 py-3 font-bold text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      Discard
+                    </button>
+                    <button
+                      onClick={sendEmail}
+                      disabled={loading}
+                      className="px-8 py-3 bg-[#0B0B0B] text-white font-bold tracking-wider uppercase hover:bg-[#1A1A1A] hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 rounded-xl shadow-lg shadow-black/20 transition-all duration-300"
+                    >
+                      <Send className="w-4 h-4" />
+                      {loading ? 'Sending...' : 'Send Email'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div >
+
+        {showSuccess && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+            <div className="bg-green-500 text-white p-8 rounded-full shadow-2xl animate-in zoom-in duration-500">
+              <Check className="w-16 h-16" />
+            </div>
+          </div>
+        )}
+
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in duration-200">
+            <div className="modal-animate bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black">Add New Email Account</h2>
+                <button onClick={() => setShowAddModal(false)} className="text-gray-500 hover:text-black transition-all duration-200 hover:rotate-90">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-bold text-sm mb-2">Account Name *</label>
+                  <input type="text" value={newAccount.name} onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="e.g., Sales" />
+                </div>
+                <div>
+                  <label className="block font-bold text-sm mb-2">Email Address *</label>
+                  <input type="email" value={newAccount.email} onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="email@domain.com" />
+                </div>
+                <div>
+                  <label className="block font-bold text-sm mb-2">Password *</label>
+                  <input type="password" value={newAccount.password} onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-sm mb-2">IMAP Host</label>
+                    <input type="text" value={newAccount.imapHost} onChange={(e) => setNewAccount({ ...newAccount, imapHost: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-sm mb-2">IMAP Port</label>
+                    <input type="number" value={newAccount.imapPort} onChange={(e) => setNewAccount({ ...newAccount, imapPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-sm mb-2">SMTP Host</label>
+                    <input type="text" value={newAccount.smtpHost} onChange={(e) => setNewAccount({ ...newAccount, smtpHost: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-sm mb-2">SMTP Port</label>
+                    <input type="number" value={newAccount.smtpPort} onChange={(e) => setNewAccount({ ...newAccount, smtpPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button onClick={createAccount} disabled={loading} className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400">
+                    {loading ? 'Creating...' : 'Create Account'}
+                  </button>
+                  <button onClick={() => setShowAddModal(false)} className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Account Modal */}
+        {showEditModal && editingAccount && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ animation: 'fadeIn 0.2s' }}>
+            <div className="modal-animate bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black">Edit Email Account</h2>
+                <button onClick={() => { setShowEditModal(false); setEditingAccount(null); }} className="text-gray-500 hover:text-black transition-all duration-200 hover:rotate-90">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-bold text-sm mb-2">Account Name *</label>
+                  <input type="text" value={editingAccount.name} onChange={(e) => setEditingAccount({ ...editingAccount, name: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="e.g., Sales" />
+                </div>
+                <div>
+                  <label className="block font-bold text-sm mb-2">Email Address *</label>
+                  <input type="email" value={editingAccount.email} onChange={(e) => setEditingAccount({ ...editingAccount, email: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="email@domain.com" />
+                </div>
+                <div>
+                  <label className="block font-bold text-sm mb-2">Password (leave blank to keep current)</label>
+                  <input type="password" value={editingAccount.password || ''} onChange={(e) => setEditingAccount({ ...editingAccount, password: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" placeholder="Enter new password or leave blank" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-sm mb-2">IMAP Host</label>
+                    <input type="text" value={editingAccount.imapHost} onChange={(e) => setEditingAccount({ ...editingAccount, imapHost: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-sm mb-2">IMAP Port</label>
+                    <input type="number" value={editingAccount.imapPort} onChange={(e) => setEditingAccount({ ...editingAccount, imapPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-sm mb-2">SMTP Host</label>
+                    <input type="text" value={editingAccount.smtpHost} onChange={(e) => setEditingAccount({ ...editingAccount, smtpHost: e.target.value })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-sm mb-2">SMTP Port</label>
+                    <input type="number" value={editingAccount.smtpPort} onChange={(e) => setEditingAccount({ ...editingAccount, smtpPort: parseInt(e.target.value) })} className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black transition-all duration-200" />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button onClick={updateAccount} disabled={loading} className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400">
+                    {loading ? 'Updating...' : 'Update Account'}
+                  </button>
+                  <button onClick={() => { setShowEditModal(false); setEditingAccount(null); }} className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showSignatureModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ animation: 'fadeIn 0.2s' }}>
+            <div className="modal-animate bg-white rounded-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black">Email Signature</h2>
+                <button onClick={() => setShowSignatureModal(false)} className="text-gray-500 hover:text-black transition-all duration-200 hover:rotate-90">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <input
+                    type="checkbox"
+                    checked={useSignature}
+                    onChange={(e) => setUseSignature(e.target.checked)}
+                    className="w-5 h-5 rounded"
+                  />
+                  <label className="font-bold text-sm">
+                    Auto-append signature to outgoing emails
+                  </label>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block font-bold text-sm">Signature</label>
+                    <button
+                      onClick={() => setSignatureRichText(!signatureRichText)}
+                      className="text-xs px-3 py-1 border border-gray-border rounded-md hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      {signatureRichText ? 'Switch to Plain Text' : 'Switch to Rich Text'}
+                    </button>
+                  </div>
+
+                  {signatureRichText ? (
+                    <RichTextEditor
+                      value={signatureHtml}
+                      onChange={setSignatureHtml}
+                      placeholder="Your signature here (e.g., name, title, contact info)..."
+                      height="250px"
+                    />
+                  ) : (
+                    <textarea
+                      value={signatureText}
+                      onChange={(e) => setSignatureText(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black h-48 transition-all duration-200"
+                      placeholder="Your signature here (e.g., name, title, contact info)..."
+                    />
+                  )}
+                </div>
+
+                <div className="p-4 bg-gray-50 border border-gray-border rounded-lg">
+                  <p className="text-sm font-bold mb-2">Preview:</p>
+                  <div className="text-sm text-gray-700 border-t border-gray-300 pt-2 mt-2">
+                    --
+                    {signatureRichText && signatureHtml ? (
+                      <div dangerouslySetInnerHTML={{ __html: signatureHtml }} />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{signatureText || '(Empty signature)'}</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button
+                    onClick={saveSignature}
+                    disabled={loading}
+                    className="btn-smooth flex-1 px-6 py-3 bg-[#0B0B0B] text-white font-bold rounded-xl hover:bg-[#1A1A1A] disabled:bg-gray-400"
+                  >
+                    {loading ? 'Saving...' : 'Save Signature'}
+                  </button>
+                  <button
+                    onClick={() => setShowSignatureModal(false)}
+                    className="btn-smooth px-6 py-3 border-2 border-[#E5E7EB] font-bold rounded-xl hover:bg-[#F5F5F5]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+
+        {/* Template Selector Dropdown */}
+        {showTemplates && view === 'compose' && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-start justify-end z-40" onClick={() => setShowTemplates(false)}>
+            <div className="mt-20 mr-8 bg-white rounded-xl shadow-2xl border border-gray-border p-4 w-96 max-h-[70vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-black text-lg">Load Template</h3>
+                <button onClick={() => setShowTemplateManager(true)} className="text-sm text-blue-600 hover:underline">
+                  Manage
+                </button>
+              </div>
+              {templates.length === 0 ? (
+                <p className="text-sm text-gray-secondary">No templates yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {templates.map(template => (
+                    <button
+                      key={template.id}
+                      onClick={() => loadTemplate(template)}
+                      className="w-full text-left p-3 border border-gray-border rounded-lg hover:border-text-black transition-all duration-200"
+                    >
+                      <div className="font-bold">{template.name}</div>
+                      {template.subject && <div className="text-sm text-gray-600 truncate">{template.subject}</div>}
+                      <div className="text-xs text-gray-secondary mt-1 flex items-center gap-2">
+                        {template.category && <span className="px-2 py-0.5 bg-gray-100 rounded">{template.category}</span>}
+                        <span>Used {template.usageCount || 0} times</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Template Manager Modal */}
+        {showTemplateManager && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ animation: 'fadeIn 0.2s' }}>
+            <div className="modal-animate bg-white rounded-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black">Manage Templates</h2>
+                <button onClick={() => setShowTemplateManager(false)} className="text-gray-500 hover:text-black transition-all duration-200 hover:rotate-90">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Save Current as Template */}
+              {view === 'compose' && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="font-bold mb-3">Save Current Email as Template</h3>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-1.5 text-gray-secondary">Template Name</label>
+                      <input
+                        type="text"
+                        value={newTemplateName}
+                        onChange={(e) => setNewTemplateName(e.target.value)}
+                        placeholder="e.g., Welcome Email"
+                        className="w-full px-3 py-2 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-1.5 text-gray-secondary">Category (Optional)</label>
+                      <input
+                        type="text"
+                        value={newTemplateCategory}
+                        onChange={(e) => setNewTemplateCategory(e.target.value)}
+                        placeholder="e.g., Support"
+                        className="w-full px-3 py-2 border border-gray-border rounded-lg focus:outline-none focus:ring-2 focus:ring-text-black"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={saveAsTemplate}
+                    disabled={loading}
+                    className="w-full px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                  >
+                    {loading ? 'Saving...' : 'Save as Template'}
+                  </button>
+                </div>
+              )}
+
+              {/* Templates List */}
+              <div>
+                <h3 className="font-bold mb-3">Your Templates ({templates.length})</h3>
+                {templates.length === 0 ? (
+                  <p className="text-sm text-gray-secondary">No templates created yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {templates.map(template => (
+                      <div
+                        key={template.id}
+                        className="flex items-start justify-between p-4 border border-gray-border rounded-lg hover:border-text-black transition-all duration-200"
+                      >
+                        <div className="flex-1">
+                          <div className="font-bold">{template.name}</div>
+                          {template.subject && <div className="text-sm text-gray-600">{template.subject}</div>}
+                          <div className="flex items-center gap-2 mt-2 text-xs text-gray-secondary">
+                            {template.category && <span className="px-2 py-1 bg-gray-100 rounded">{template.category}</span>}
+                            <span>Used {template.usageCount || 0} times</span>
+                            {template.lastUsed && <span>Last: {new Date(template.lastUsed).toLocaleDateString()}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {view === 'compose' && (
+                            <button
+                              onClick={() => {
+                                loadTemplate(template)
+                                setShowTemplateManager(false)
+                              }}
+                              className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => deleteTemplate(template.id)}
+                            className="p-2 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all duration-200"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
     </AdminLayout >
   )
 }
-
