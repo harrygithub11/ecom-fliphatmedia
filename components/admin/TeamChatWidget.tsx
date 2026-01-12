@@ -149,11 +149,18 @@ export function TeamChatWidget() {
             {/* Sticky Trigger Button */}
             {!isOpen && (
                 <div className="fixed bottom-6 right-6 z-50">
+                    <style>{`
+                        @keyframes gentlePulse {
+                            0%, 100% { transform: scale(1); }
+                            50% { transform: scale(1.05); }
+                        }
+                    `}</style>
                     <Button
                         onClick={() => setIsOpen(true)}
+                        style={{ animation: hasUnread ? 'gentlePulse 3s infinite ease-in-out' : 'none' }}
                         className={cn(
                             "h-14 w-14 rounded-full shadow-2xl bg-red-600 hover:bg-red-700 text-white animate-in zoom-in duration-300 flex items-center justify-center p-0 transition-all",
-                            hasUnread && "animate-bounce ring-4 ring-red-300"
+                            hasUnread && "ring-4 ring-red-300" // Removed animate-bounce, keeping ring for visibility
                         )}
                     >
                         <MessageSquare className="w-7 h-7" />
