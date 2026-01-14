@@ -632,8 +632,88 @@ export default function LeadsPage() {
             </div>
 
             {/* Filter Bar */}
+            <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 flex flex-wrap gap-3 items-center animate-in slide-in-from-top-4">
+                <div className="flex items-center gap-2 mr-1">
+                    <FilterIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Filters:</span>
+                </div>
 
-            {/* Bulk Action Bar */}
+                {/* Stage Filter */}
+                <Select value={filterStage} onValueChange={setFilterStage}>
+                    <SelectTrigger className="w-[130px] h-8 text-xs bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
+                        <SelectValue placeholder="Stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Stages</SelectItem>
+                        {stages.map(stage => (
+                            <SelectItem key={stage.id} value={stage.value}>{stage.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                {/* Score Filter */}
+                <Select value={filterScore} onValueChange={setFilterScore}>
+                    <SelectTrigger className="w-[120px] h-8 text-xs bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
+                        <SelectValue placeholder="Score" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Scores</SelectItem>
+                        {scores.map(score => (
+                            <SelectItem key={score.id} value={score.value}>{score.label} {score.emoji}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                {/* Tag Filter */}
+                <Select value={filterTag} onValueChange={setFilterTag}>
+                    <SelectTrigger className="w-[130px] h-8 text-xs bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
+                        <SelectValue placeholder="Tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Tags</SelectItem>
+                        {allTags.map(tag => (
+                            <SelectItem key={tag} value={tag as string}>{tag}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                {/* Campaign Input */}
+                <div className="relative">
+                    <Input
+                        placeholder="Campaign..."
+                        value={filterCampaign}
+                        onChange={e => setFilterCampaign(e.target.value)}
+                        className="h-8 w-[130px] text-xs bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+                    />
+                </div>
+
+                {/* Date Range Picker (Native) */}
+                <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 p-0.5 px-2">
+                    <Input
+                        type="date"
+                        value={dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : ''}
+                        onChange={e => setDateRange(prev => ({ ...prev, from: e.target.value ? new Date(e.target.value) : undefined }))}
+                        className="h-6 w-[110px] text-[11px] border-none shadow-none focus-visible:ring-0 p-0 bg-transparent"
+                    />
+                    <span className="text-zinc-400 text-xs">-</span>
+                    <Input
+                        type="date"
+                        value={dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : ''}
+                        onChange={e => setDateRange(prev => ({ ...prev, to: e.target.value ? new Date(e.target.value) : undefined }))}
+                        className="h-6 w-[110px] text-[11px] border-none shadow-none focus-visible:ring-0 p-0 bg-transparent"
+                    />
+                </div>
+
+                {/* Clear Filters */}
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="h-8 text-xs text-zinc-500 hover:text-red-500"
+                >
+                    <X className="w-3 h-3 mr-1" /> Clear
+                </Button>
+            </div>
             {selectedLeads.length > 0 && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-10 fade-in duration-300 border border-zinc-700">
                     <div className="flex items-center gap-3 border-r border-zinc-700 pr-6">
