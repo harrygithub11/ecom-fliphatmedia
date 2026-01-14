@@ -23,6 +23,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tag, UserPlus, FileEdit } from 'lucide-react';
 
 interface Customer {
     id: number;
@@ -98,6 +100,12 @@ export default function LeadsPage() {
 
     // Dynamic scores
     const [scores, setScores] = useState<{ id: number, value: string, label: string, color: string, emoji: string }[]>([]);
+
+    // Bulk selection state
+    const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
+    const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+    const [bulkTagOpen, setBulkTagOpen] = useState(false);
+    const [bulkTagValue, setBulkTagValue] = useState('');
 
     // Handle Click Outside for Suggestions
     useEffect(() => {
@@ -310,6 +318,59 @@ export default function LeadsPage() {
         return matchesSearch && matchesOwner && matchesSource;
     });
 
+    // Bulk Actions Handlers
+    const toggleSelectAll = () => {
+        if (selectedLeads.length === filtered.length) {
+            setSelectedLeads([]);
+        } else {
+            setSelectedLeads(filtered.map(l => l.id));
+        }
+    };
+
+    const toggleSelectLead = (id: number) => {
+        if (selectedLeads.includes(id)) {
+            setSelectedLeads(selectedLeads.filter(lId => lId !== id));
+        } else {
+            setSelectedLeads([...selectedLeads, id]);
+        }
+    };
+
+    const handleBulkAction = async (action: string, data?: any) => {
+        if (!selectedLeads.length) return;
+        if (action === 'delete' && !confirm(`Are you sure you want to delete ${selectedLeads.length} leads?`)) return;
+
+        setIsBulkActionLoading(true);
+        try {
+            const res = await fetch('/api/admin/leads/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action,
+                    leadIds: selectedLeads,
+                    data
+                })
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                toast({ description: result.message, className: 'bg-green-500 text-white' });
+                // Refresh list
+                const resList = await fetch('/api/admin/leads');
+                const dataList = await resList.json();
+                if (Array.isArray(dataList)) setLeads(dataList);
+                setSelectedLeads([]); // Clear selection
+                if (action === 'add_tags') setBulkTagOpen(false);
+            } else {
+                toast({ variant: 'destructive', description: result.message });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', description: 'Bulk action failed' });
+        } finally {
+            setIsBulkActionLoading(false);
+        }
+    };
+
     const updateLead = async (id: number, field: string, value: string) => {
         // Optimistic Update
         const oldLeads = [...leads];
@@ -483,8 +544,89 @@ export default function LeadsPage() {
                 />
             </div>
 
+            {/* Bulk Action Bar */}
+            {selectedLeads.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-10 fade-in duration-300 border border-zinc-700">
+                    <div className="flex items-center gap-3 border-r border-zinc-700 pr-6">
+                        <span className="font-bold text-sm bg-white text-black px-2 py-0.5 rounded-full">{selectedLeads.length}</span>
+                        <span className="text-sm font-medium">Selected</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-white hover:text-white hover:bg-zinc-800 gap-2 h-8">
+                                    <Tag className="w-4 h-4" /> Tag
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="p-2 w-64 bg-zinc-900 border-zinc-800 text-white">
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Enter tag name..."
+                                        value={bulkTagValue}
+                                        onChange={e => setBulkTagValue(e.target.value)}
+                                        className="bg-zinc-800 border-zinc-700 text-white h-8"
+                                    />
+                                    <Button
+                                        size="sm"
+                                        className="h-8 bg-primary hover:bg-primary/90"
+                                        onClick={() => handleBulkAction('add_tags', { tag: bulkTagValue })}
+                                    >
+                                        Add
+                                    </Button>
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-white hover:text-white hover:bg-zinc-800 gap-2 h-8">
+                                    <UserPlus className="w-4 h-4" /> Assign
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-white">
+                                <DropdownMenuLabel>Assign Owner</DropdownMenuLabel>
+                                {admins.map(admin => (
+                                    <DropdownMenuItem
+                                        key={admin.id}
+                                        onClick={() => handleBulkAction('assign_owner', { owner: admin.name })}
+                                        className="hover:bg-zinc-800 cursor-pointer focus:bg-zinc-800 focus:text-white"
+                                    >
+                                        <Avatar className="h-5 w-5 mr-2">
+                                            <AvatarImage src={admin.avatar_url || ''} />
+                                            <AvatarFallback className="text-[10px] text-black">{admin.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        {admin.name}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20 gap-2 h-8"
+                            onClick={() => handleBulkAction('delete')}
+                        >
+                            <Trash2 className="w-4 h-4" /> Delete
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-zinc-500 hover:text-white hover:bg-zinc-800 h-8 w-8 ml-2 rounded-full"
+                            onClick={() => setSelectedLeads([])}
+                        >
+                            <span className="sr-only">Clear selection</span>
+                            &times;
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             <Card>
                 <CardHeader>
+
                     <div className="flex items-center justify-between">
                         <CardTitle>All Leads</CardTitle>
                         <div className="flex items-center gap-2">
@@ -560,6 +702,13 @@ export default function LeadsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-[40px]">
+                                    <Checkbox
+                                        checked={filtered.length > 0 && selectedLeads.length === filtered.length}
+                                        onCheckedChange={toggleSelectAll}
+                                        aria-label="Select all"
+                                    />
+                                </TableHead>
                                 <TableHead>Lead Name</TableHead>
                                 <TableHead>Source</TableHead>
                                 <TableHead>Score</TableHead>
@@ -573,15 +722,22 @@ export default function LeadsPage() {
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center h-24">Loading inbox...</TableCell>
+                                    <TableCell colSpan={8} className="text-center h-24">Loading inbox...</TableCell>
                                 </TableRow>
                             ) : filtered.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">No leads found.</TableCell>
+                                    <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">No leads found.</TableCell>
                                 </TableRow>
                             ) : (
                                 filtered.map((lead) => (
-                                    <TableRow key={lead.id} className="group cursor-pointer hover:bg-muted/50">
+                                    <TableRow key={lead.id} className={`group cursor-pointer hover:bg-muted/50 ${selectedLeads.includes(lead.id) ? 'bg-muted/50' : ''}`}>
+                                        <TableCell onClick={(e) => e.stopPropagation()}>
+                                            <Checkbox
+                                                checked={selectedLeads.includes(lead.id)}
+                                                onCheckedChange={() => toggleSelectLead(lead.id)}
+                                                aria-label="Select row"
+                                            />
+                                        </TableCell>
                                         <TableCell>
                                             <div
                                                 className="block cursor-pointer group"
