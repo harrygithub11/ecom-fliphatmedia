@@ -227,25 +227,26 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                         </TabsList>
                     </div>
 
-                    <ScrollArea className="flex-1 bg-zinc-50/50 dark:bg-zinc-900/50">
-                        <div className="p-6 pb-20">
-                            {activeTab === 'timeline' && (
-                                <div className="flex flex-col h-[500px]">
-                                    {loading ? (
-                                        <div className="flex items-center justify-center py-10 text-muted-foreground">
-                                            <Clock className="w-4 h-4 animate-spin mr-2" /> Loading timeline...
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {/* Quick Note Input - Fixed at Top */}
-                                            <div className="flex gap-3 mb-4 pb-4 border-b shrink-0">
+                    {/* Content Area - Flex Container */}
+                    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/50 relative">
+                        {activeTab === 'timeline' && (
+                            <div className="flex flex-col h-full">
+                                {loading ? (
+                                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                                        <Clock className="w-4 h-4 animate-spin mr-2" /> Loading timeline...
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Quick Note Input - Fixed at Top */}
+                                        <div className="p-4 border-b bg-white dark:bg-zinc-900 shrink-0 z-10 shadow-sm">
+                                            <div className="flex gap-3">
                                                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary">
                                                     <MessageSquare className="w-4 h-4" />
                                                 </div>
                                                 <div className="flex-1 space-y-2">
                                                     <Textarea
                                                         placeholder="Add a quick note or update..."
-                                                        className="min-h-[80px] text-sm resize-none bg-white font-normal"
+                                                        className="min-h-[80px] text-sm resize-none bg-background font-normal focus-visible:ring-1"
                                                         value={note}
                                                         onChange={e => setNote(e.target.value)}
                                                     />
@@ -256,9 +257,11 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            {/* Timeline Items - Scrollable Below */}
-                                            <div className="flex-1 overflow-y-auto">
+                                        {/* Timeline Items - Scrollable Below */}
+                                        <ScrollArea className="flex-1">
+                                            <div className="p-6">
                                                 <div className="relative pl-4 border-l border-border/60 space-y-8">
                                                     {timeline.length === 0 ? (
                                                         <div className="text-sm text-muted-foreground pl-4 italic">No activity yet.</div>
@@ -279,13 +282,15 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                                                     )}
                                                 </div>
                                             </div>
-                                        </>
-                                    )}
-                                </div>
-                            )}
+                                        </ScrollArea>
+                                    </>
+                                )}
+                            </div>
+                        )}
 
-                            {activeTab === 'notes' && (
-                                <div className="space-y-4">
+                        {activeTab === 'notes' && (
+                            <ScrollArea className="flex-1">
+                                <div className="p-6 space-y-4">
                                     <Textarea
                                         value={details?.profile?.notes || (initialData?.notes) || ''}
                                         onChange={(e) => {
@@ -294,59 +299,63 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                                             }
                                         }}
                                         onBlur={(e) => handleUpdate('notes', e.target.value)}
-                                        className="min-h-[300px] border-none focus-visible:ring-0 bg-transparent resize-none p-0 text-base leading-relaxed placeholder:text-muted-foreground/50"
+                                        className="min-h-[400px] border-none focus-visible:ring-0 bg-transparent resize-none p-0 text-base leading-relaxed placeholder:text-muted-foreground/50"
                                         placeholder="Start typing complex notes here..."
                                     />
                                 </div>
-                            )}
+                            </ScrollArea>
+                        )}
 
-                            {activeTab === 'emails' && (
-                                <div className="space-y-4">
-                                    {loading ? (
-                                        <div className="flex items-center justify-center py-10">
-                                            <Clock className="w-4 h-4 animate-spin mr-2" /> Loading emails...
-                                        </div>
-                                    ) : (details?.emails || []).length === 0 ? (
-                                        <div className="text-center py-10 text-muted-foreground italic">No emails found for this lead.</div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {details.emails.map((email: any) => (
-                                                <div key={email.id} className="bg-white dark:bg-zinc-950 border rounded-xl p-4 shadow-sm hover:border-primary/30 transition-all group">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                                                                {email.from.includes(lead.email) ? 'RECEIVED' : 'SENT'}
-                                                            </span>
-                                                            <h4 className="font-bold text-sm leading-tight group-hover:text-primary transition-colors">{email.subject || '(No Subject)'}</h4>
+                        {activeTab === 'emails' && (
+                            <ScrollArea className="flex-1">
+                                <div className="p-6">
+                                    <div className="space-y-4">
+                                        {loading ? (
+                                            <div className="flex items-center justify-center py-10">
+                                                <Clock className="w-4 h-4 animate-spin mr-2" /> Loading emails...
+                                            </div>
+                                        ) : (details?.emails || []).length === 0 ? (
+                                            <div className="text-center py-10 text-muted-foreground italic">No emails found for this lead.</div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {details.emails.map((email: any) => (
+                                                    <div key={email.id} className="bg-white dark:bg-zinc-950 border rounded-xl p-4 shadow-sm hover:border-primary/30 transition-all group">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                                                                    {email.from.includes(lead.email) ? 'RECEIVED' : 'SENT'}
+                                                                </span>
+                                                                <h4 className="font-bold text-sm leading-tight group-hover:text-primary transition-colors">{email.subject || '(No Subject)'}</h4>
+                                                            </div>
+                                                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{new Date(email.date).toLocaleDateString()}</span>
                                                         </div>
-                                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{new Date(email.date).toLocaleDateString()}</span>
+                                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{email.textSnippet || email.text || 'No content preview'}</p>
+                                                        <div className="flex justify-end pt-2 border-t border-zinc-100 dark:border-zinc-900">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-primary/5 hover:text-primary"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    openCompose({
+                                                                        to: email.from.includes(lead.email) ? email.from : email.to,
+                                                                        subject: `Re: ${email.subject}`,
+                                                                        body: `\n\n--- On ${new Date(email.date).toLocaleString()}, ${email.from} wrote: ---\n\n${email.textSnippet || email.text}`
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <Mail className="w-3 h-3 mr-2" /> Reply
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{email.textSnippet || email.text || 'No content preview'}</p>
-                                                    <div className="flex justify-end pt-2 border-t border-zinc-100 dark:border-zinc-900">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-primary/5 hover:text-primary"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                openCompose({
-                                                                    to: email.from.includes(lead.email) ? email.from : email.to,
-                                                                    subject: `Re: ${email.subject}`,
-                                                                    body: `\n\n--- On ${new Date(email.date).toLocaleString()}, ${email.from} wrote: ---\n\n${email.textSnippet || email.text}`
-                                                                });
-                                                            }}
-                                                        >
-                                                            <Mail className="w-3 h-3 mr-2" /> Reply
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    </ScrollArea>
+                            </ScrollArea>
+                        )}
+                    </div>
 
                     <div className="p-4 border-t bg-background shrink-0 flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">
