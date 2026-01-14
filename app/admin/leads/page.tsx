@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Mail, Phone, MoreHorizontal, Plus, Upload, Trash2, MapPin } from 'lucide-react';
+import { Search, Mail, Phone, MoreHorizontal, Plus, Upload, Trash2, MapPin, Users, Activity } from 'lucide-react';
 import { CSVImportModal } from '@/components/admin/CSVImportModal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
@@ -348,8 +348,62 @@ export default function LeadsPage() {
         }
     };
 
+    // Stats Calculations
+    const totalLeads = leads.length;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const newLeadsToday = leads.filter(l => l.created_at.startsWith(todayStr)).length;
+    const dailyGoal = 50; // Example goal
+    const goalProgress = Math.min((newLeadsToday / dailyGoal) * 100, 100);
+
     return (
         <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Total Leads */}
+                <Card className="shadow-none border-none bg-zinc-50 dark:bg-zinc-900/50">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Leads</p>
+                            <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{totalLeads}</h3>
+                        </div>
+                        <div className="h-10 w-10 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center text-zinc-400">
+                            <Users className="w-5 h-5" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* New Today */}
+                <Card className="shadow-none border-none bg-zinc-50 dark:bg-zinc-900/50">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">New Today</p>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{newLeadsToday}</h3>
+                                {newLeadsToday > 0 && <span className="text-xs font-bold text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">+{(newLeadsToday / totalLeads * 100).toFixed(1)}%</span>}
+                            </div>
+                        </div>
+                        <div className="h-10 w-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500">
+                            <Activity className="w-5 h-5" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Growth Goal */}
+                <Card className="shadow-none border-none bg-zinc-50 dark:bg-zinc-900/50 md:col-span-2">
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Daily Growth Goal</p>
+                                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{newLeadsToday} <span className="text-muted-foreground text-sm font-normal">/ {dailyGoal} leads</span></h3>
+                            </div>
+                            <div className="text-xs font-bold text-zinc-500">{goalProgress.toFixed(0)}%</div>
+                        </div>
+                        <div className="h-2 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary transition-all duration-500" style={{ width: `${goalProgress}%` }}></div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Lead Inbox</h1>
