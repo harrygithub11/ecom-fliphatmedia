@@ -493,8 +493,9 @@ return (
             <Card className="shadow-none border-none bg-zinc-50 dark:bg-zinc-900/50">
                 <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Leads</p>
-                        <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{totalLeads}</h3>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{filtered.length !== leads.length ? 'Filtered Leads' : 'Total Leads'}</p>
+                        <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{filtered.length}</h3>
+                        {filtered.length !== leads.length && <span className="text-xs text-muted-foreground">of {leads.length} total</span>}
                     </div>
                     <div className="h-10 w-10 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center text-zinc-400">
                         <Users className="w-5 h-5" />
@@ -533,6 +534,110 @@ return (
                     </div>
                 </CardContent>
             </Card>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-wrap gap-4 items-center animate-in slide-in-from-top-4">
+            <div className="flex items-center gap-2 mr-2">
+                <FilterIcon className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-bold uppercase tracking-wide">Filters:</span>
+            </div>
+
+            {/* Stage Filter */}
+            <Select value={filterStage} onValueChange={setFilterStage}>
+                <SelectTrigger className="w-[140px] h-9 text-xs">
+                    <SelectValue placeholder="Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Stages</SelectItem>
+                    {stages.map(stage => (
+                        <SelectItem key={stage.id} value={stage.value}>{stage.label}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            {/* Score Filter */}
+            <Select value={filterScore} onValueChange={setFilterScore}>
+                <SelectTrigger className="w-[130px] h-9 text-xs">
+                    <SelectValue placeholder="Score" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Scores</SelectItem>
+                    {scores.map(score => (
+                        <SelectItem key={score.id} value={score.value}>{score.label} {score.emoji}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            {/* Tag Filter */}
+            <Select value={filterTag} onValueChange={setFilterTag}>
+                <SelectTrigger className="w-[140px] h-9 text-xs">
+                    <SelectValue placeholder="Tag" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Tags</SelectItem>
+                    {allTags.map(tag => (
+                        <SelectItem key={tag} value={tag as string}>{tag}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            {/* Campaign Input */}
+            <div className="relative">
+                <Input
+                    placeholder="Campaign..."
+                    value={filterCampaign}
+                    onChange={e => setFilterCampaign(e.target.value)}
+                    className="h-9 w-[140px] text-xs"
+                />
+            </div>
+
+            {/* Date Range Picker */}
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant={"outline"}
+                        className={cn(
+                            "h-9 w-[240px] justify-start text-left font-normal text-xs",
+                            !dateRange.from && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange.from ? (
+                            dateRange.to ? (
+                                <>
+                                    {format(dateRange.from, "LLL dd, y")} -{" "}
+                                    {format(dateRange.to, "LLL dd, y")}
+                                </>
+                            ) : (
+                                format(dateRange.from, "LLL dd, y")
+                            )
+                        ) : (
+                            <span>Pick a date range</span>
+                        )}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange.from}
+                        selected={dateRange}
+                        onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+                        numberOfMonths={2}
+                    />
+                </PopoverContent>
+            </Popover>
+
+            {/* Clear Filters */}
+            <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-9 text-xs text-muted-foreground hover:text-black"
+            >
+                <X className="w-3.5 h-3.5 mr-1" /> Clear
+            </Button>
         </div>
 
         <div className="flex items-center justify-between">
