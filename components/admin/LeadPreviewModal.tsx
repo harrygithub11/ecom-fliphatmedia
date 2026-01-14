@@ -104,7 +104,7 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+            <DialogContent className="w-[700px] h-[85vh] max-w-[95vw] grid grid-rows-[auto_auto_1fr_auto] p-0 gap-0 overflow-hidden">
                 {/* Header Profile Section */}
                 <div className="bg-muted/30 p-6 border-b shrink-0">
                     <div className="flex justify-between items-start mb-4">
@@ -211,8 +211,8 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                     </div>
                 </div>
 
-                {/* Main Content Tabs */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+                {/* Main Content Tabs - Spans 2 grid rows (tabs header + content) */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="contents">
                     <div className="px-6 border-b shrink-0 bg-white dark:bg-zinc-950/50">
                         <TabsList className="h-10 bg-transparent p-0 -mb-px">
                             <TabsTrigger value="timeline" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 h-10 bg-transparent">
@@ -227,10 +227,10 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                         </TabsList>
                     </div>
 
-                    {/* Content Area - Constrained Height */}
-                    <div className="flex-1 flex flex-col min-h-0 max-h-[calc(90vh-280px)] overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/50">
+                    {/* Content Area - Scrollable */}
+                    <div className="overflow-y-auto bg-zinc-50/50 dark:bg-zinc-900/50">
                         {activeTab === 'timeline' && (
-                            <div className="flex flex-col h-full">
+                            <div className="flex flex-col">
                                 {loading ? (
                                     <div className="flex items-center justify-center h-full text-muted-foreground">
                                         <Clock className="w-4 h-4 animate-spin mr-2" /> Loading timeline...
@@ -259,101 +259,95 @@ export function LeadPreviewModal({ open, onOpenChange, leadId, initialData, stag
                                             </div>
                                         </div>
 
-                                        {/* Timeline Items - Scrollable Below */}
-                                        <ScrollArea className="flex-1">
-                                            <div className="p-6">
-                                                <div className="relative pl-4 border-l border-border/60 space-y-8">
-                                                    {timeline.length === 0 ? (
-                                                        <div className="text-sm text-muted-foreground pl-4 italic">No activity yet.</div>
-                                                    ) : (
-                                                        timeline.map((item: any) => (
-                                                            <div key={item.id} className="relative pl-6 group">
-                                                                <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-zinc-200 border-2 border-white dark:border-zinc-950 dark:bg-zinc-700 group-hover:bg-primary transition-colors"></div>
-                                                                <div className="flex flex-col gap-1">
-                                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                                        <span className="font-medium text-foreground">{item.created_by_name || 'System'}</span>
-                                                                        <span>•</span>
-                                                                        <span>{new Date(item.created_at).toLocaleString()}</span>
-                                                                    </div>
-                                                                    <p className="text-sm text-foreground/90 whitespace-pre-wrap">{item.content}</p>
+                                        {/* Timeline Items */}
+                                        <div className="p-6 pb-8">
+                                            <div className="relative pl-4 border-l border-border/60 space-y-8">
+                                                {timeline.length === 0 ? (
+                                                    <div className="text-sm text-muted-foreground pl-4 italic">No activity yet.</div>
+                                                ) : (
+                                                    timeline.map((item: any) => (
+                                                        <div key={item.id} className="relative pl-6 group">
+                                                            <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-zinc-200 border-2 border-white dark:border-zinc-950 dark:bg-zinc-700 group-hover:bg-primary transition-colors"></div>
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                    <span className="font-medium text-foreground">{item.created_by_name || 'System'}</span>
+                                                                    <span>•</span>
+                                                                    <span>{new Date(item.created_at).toLocaleString()}</span>
                                                                 </div>
+                                                                <p className="text-sm text-foreground/90 whitespace-pre-wrap">{item.content}</p>
                                                             </div>
-                                                        ))
-                                                    )}
-                                                </div>
+                                                        </div>
+                                                    ))
+                                                )}
                                             </div>
-                                        </ScrollArea>
+                                        </div>
                                     </>
                                 )}
                             </div>
                         )}
 
                         {activeTab === 'notes' && (
-                            <ScrollArea className="flex-1">
-                                <div className="p-6 space-y-4">
-                                    <Textarea
-                                        value={details?.profile?.notes || (initialData?.notes) || ''}
-                                        onChange={(e) => {
-                                            if (details?.profile) {
-                                                setDetails({ ...details, profile: { ...details.profile, notes: e.target.value } });
-                                            }
-                                        }}
-                                        onBlur={(e) => handleUpdate('notes', e.target.value)}
-                                        className="min-h-[400px] border-none focus-visible:ring-0 bg-transparent resize-none p-0 text-base leading-relaxed placeholder:text-muted-foreground/50"
-                                        placeholder="Start typing complex notes here..."
-                                    />
-                                </div>
-                            </ScrollArea>
+                            <div className="p-6 pb-8">
+                                <Textarea
+                                    value={details?.profile?.notes || (initialData?.notes) || ''}
+                                    onChange={(e) => {
+                                        if (details?.profile) {
+                                            setDetails({ ...details, profile: { ...details.profile, notes: e.target.value } });
+                                        }
+                                    }}
+                                    onBlur={(e) => handleUpdate('notes', e.target.value)}
+                                    className="min-h-[400px] border-none focus-visible:ring-0 bg-transparent resize-none p-0 text-base leading-relaxed placeholder:text-muted-foreground/50"
+                                    placeholder="Start typing complex notes here..."
+                                />
+                            </div>
                         )}
 
                         {activeTab === 'emails' && (
-                            <ScrollArea className="flex-1">
-                                <div className="p-6">
-                                    <div className="space-y-4">
-                                        {loading ? (
-                                            <div className="flex items-center justify-center py-10">
-                                                <Clock className="w-4 h-4 animate-spin mr-2" /> Loading emails...
-                                            </div>
-                                        ) : (details?.emails || []).length === 0 ? (
-                                            <div className="text-center py-10 text-muted-foreground italic">No emails found for this lead.</div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {details.emails.map((email: any) => (
-                                                    <div key={email.id} className="bg-white dark:bg-zinc-950 border rounded-xl p-4 shadow-sm hover:border-primary/30 transition-all group">
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                                                                    {email.from.includes(lead.email) ? 'RECEIVED' : 'SENT'}
-                                                                </span>
-                                                                <h4 className="font-bold text-sm leading-tight group-hover:text-primary transition-colors">{email.subject || '(No Subject)'}</h4>
-                                                            </div>
-                                                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{new Date(email.date).toLocaleDateString()}</span>
+                            <div className="p-6 pb-8">
+                                <div className="space-y-4">
+                                    {loading ? (
+                                        <div className="flex items-center justify-center py-10">
+                                            <Clock className="w-4 h-4 animate-spin mr-2" /> Loading emails...
+                                        </div>
+                                    ) : (details?.emails || []).length === 0 ? (
+                                        <div className="text-center py-10 text-muted-foreground italic">No emails found for this lead.</div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {details.emails.map((email: any) => (
+                                                <div key={email.id} className="bg-white dark:bg-zinc-950 border rounded-xl p-4 shadow-sm hover:border-primary/30 transition-all group">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                                                                {email.from.includes(lead.email) ? 'RECEIVED' : 'SENT'}
+                                                            </span>
+                                                            <h4 className="font-bold text-sm leading-tight group-hover:text-primary transition-colors">{email.subject || '(No Subject)'}</h4>
                                                         </div>
-                                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{email.textSnippet || email.text || 'No content preview'}</p>
-                                                        <div className="flex justify-end pt-2 border-t border-zinc-100 dark:border-zinc-900">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-primary/5 hover:text-primary"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    openCompose({
-                                                                        to: email.from.includes(lead.email) ? email.from : email.to,
-                                                                        subject: `Re: ${email.subject}`,
-                                                                        body: `\n\n--- On ${new Date(email.date).toLocaleString()}, ${email.from} wrote: ---\n\n${email.textSnippet || email.text}`
-                                                                    });
-                                                                }}
-                                                            >
-                                                                <Mail className="w-3 h-3 mr-2" /> Reply
-                                                            </Button>
-                                                        </div>
+                                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{new Date(email.date).toLocaleDateString()}</span>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{email.textSnippet || email.text || 'No content preview'}</p>
+                                                    <div className="flex justify-end pt-2 border-t border-zinc-100 dark:border-zinc-900">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-primary/5 hover:text-primary"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openCompose({
+                                                                    to: email.from.includes(lead.email) ? email.from : email.to,
+                                                                    subject: `Re: ${email.subject}`,
+                                                                    body: `\n\n--- On ${new Date(email.date).toLocaleString()}, ${email.from} wrote: ---\n\n${email.textSnippet || email.text}`
+                                                                });
+                                                            }}
+                                                        >
+                                                            <Mail className="w-3 h-3 mr-2" /> Reply
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                            </ScrollArea>
+                            </div>
                         )}
                     </div>
 
