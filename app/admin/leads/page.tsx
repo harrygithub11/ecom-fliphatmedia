@@ -499,7 +499,6 @@ export default function LeadsPage() {
     const totalLeads = leads.length;
     const todayStr = new Date().toISOString().split('T')[0];
     const newLeadsToday = leads.filter(l => l.created_at.startsWith(todayStr)).length;
-    const dailyGoal = 50; // Example goal
     const goalProgress = Math.min((newLeadsToday / dailyGoal) * 100, 100);
 
     return (
