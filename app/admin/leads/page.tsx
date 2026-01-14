@@ -605,42 +605,22 @@ export default function LeadsPage() {
                     />
                 </div>
 
-                {/* Date Range Picker */}
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant={"outline"}
-                            className={cn(
-                                "h-9 w-[240px] justify-start text-left font-normal text-xs",
-                                !dateRange.from && "text-muted-foreground"
-                            )}
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dateRange.from ? (
-                                dateRange.to ? (
-                                    <>
-                                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                                        {format(dateRange.to, "LLL dd, y")}
-                                    </>
-                                ) : (
-                                    format(dateRange.from, "LLL dd, y")
-                                )
-                            ) : (
-                                <span>Pick a date range</span>
-                            )}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={dateRange.from}
-                            selected={dateRange}
-                            onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
-                            numberOfMonths={2}
-                        />
-                    </PopoverContent>
-                </Popover>
+                {/* Date Range Picker (Native) */}
+                <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 p-1">
+                    <Input
+                        type="date"
+                        value={dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : ''}
+                        onChange={e => setDateRange(prev => ({ ...prev, from: e.target.value ? new Date(e.target.value) : undefined }))}
+                        className="h-7 w-[120px] text-xs border-none shadow-none focus-visible:ring-0 p-1 bg-transparent"
+                    />
+                    <span className="text-zinc-400 text-xs">-</span>
+                    <Input
+                        type="date"
+                        value={dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : ''}
+                        onChange={e => setDateRange(prev => ({ ...prev, to: e.target.value ? new Date(e.target.value) : undefined }))}
+                        className="h-7 w-[120px] text-xs border-none shadow-none focus-visible:ring-0 p-1 bg-transparent"
+                    />
+                </div>
 
                 {/* Clear Filters */}
                 <Button
